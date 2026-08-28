@@ -218,7 +218,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                         {save.title}
                       </h4>
                       <div className="font-label-sm text-label-sm text-on-surface-variant mb-md">
-                        {save.totalPieces} Pieces • {save.cutStyle}
+                        {save.totalPieces} Pieces
                       </div>
                       <div className="mt-auto">
                         <div className="flex justify-between font-label-sm text-label-sm mb-xs text-on-surface">

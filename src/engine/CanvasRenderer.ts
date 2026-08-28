@@ -61,7 +61,7 @@ export class CanvasRenderer {
       ctx.save()
       ctx.translate(marginX, marginY)
 
-      // 1. Clip path to the piece's Bézier jigsaw silhouette
+      // 1. Clip path to the piece's jigsaw silhouette
       ctx.beginPath()
       JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
       ctx.clip()

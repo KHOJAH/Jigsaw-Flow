@@ -50,6 +50,7 @@ export interface PuzzlePiece {
   jitterProfile: PieceJitterProfile
   colorKey: string // hex code or hue name for sorting
   zIndex: number
+  cutStyle?: PuzzleCutStyle
 }
 
 export interface PuzzleSave {

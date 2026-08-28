@@ -30,7 +30,6 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [title, setTitle] = useState(initialTitle)
   const [pieceCount, setPieceCount] = useState(initialPieces)
   const [enableRotation, setEnableRotation] = useState(false)
-  const [cutStyle, setCutStyle] = useState<PuzzleCutStyle>('classic')
   const [aspectRatio, setAspectRatio] = useState<'free' | '16:9' | '4:3' | '1:1'>('16:9')
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -192,7 +191,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
         imageSrc: croppedDataUrl,
         pieceCount: actualPieces,
         enableRotation,
-        cutStyle,
+        cutStyle: 'classic',
         aspectRatio,
       })
     } catch (err) {
@@ -202,7 +201,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
         imageSrc,
         pieceCount: actualPieces,
         enableRotation,
-        cutStyle,
+        cutStyle: 'classic',
         aspectRatio,
       })
     } finally {
@@ -530,48 +529,6 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                   />
                   <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container" />
                 </label>
-              </div>
-
-              {/* Cut Pattern Style */}
-              <div>
-                <div className="font-label-md text-label-md text-on-surface mb-xs font-semibold">
-                  Cut Pattern Style
-                </div>
-                <div className="grid grid-cols-2 gap-sm">
-                  <div
-                    onClick={() => setCutStyle('classic')}
-                    className={`rounded-xl p-sm cursor-pointer transition-all border-2 text-center ${
-                      cutStyle === 'classic'
-                        ? 'border-primary bg-primary-fixed/20 shadow-sm'
-                        : 'border-outline-variant/40 bg-surface-container-lowest hover:bg-surface-variant'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-primary text-2xl">extension</span>
-                    <div className="font-label-md text-xs text-on-surface font-semibold mt-0.5">
-                      Classic Bézier
-                    </div>
-                    <div className="text-[10px] text-on-surface-variant">
-                      Traditional rounded tabs
-                    </div>
-                  </div>
-
-                  <div
-                    onClick={() => setCutStyle('geometric')}
-                    className={`rounded-xl p-sm cursor-pointer transition-all border-2 text-center ${
-                      cutStyle === 'geometric'
-                        ? 'border-primary bg-primary-fixed/20 shadow-sm'
-                        : 'border-outline-variant/40 bg-surface-container-lowest hover:bg-surface-variant'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-on-surface-variant text-2xl">
-                      category
-                    </span>
-                    <div className="font-label-md text-xs text-on-surface font-semibold mt-0.5">
-                      Geometric
-                    </div>
-                    <div className="text-[10px] text-on-surface-variant">Modern crisp angles</div>
-                  </div>
-                </div>
               </div>
             </div>
 

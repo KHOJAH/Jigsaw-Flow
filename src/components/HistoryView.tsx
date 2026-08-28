@@ -170,7 +170,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                         </button>
                       </div>
                       <p className="text-xs text-on-surface-variant mt-0.5">
-                        {save.totalPieces} Pieces • {save.cutStyle} •{' '}
+                        {save.totalPieces} Pieces •{' '}
                         {save.rotationEnabled ? 'Rotation ON' : 'Rotation OFF'}
                       </p>
                     </div>

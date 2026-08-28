@@ -6,13 +6,6 @@ import {
   PuzzlePiece,
 } from '../types/puzzle'
 
-export interface GridDimensions {
-  rows: number
-  cols: number
-  pieceWidth: number
-  pieceHeight: number
-}
-
 interface Point2D {
   x: number
   y: number
@@ -20,20 +13,22 @@ interface Point2D {
 
 export class JigsawGenerator {
   /**
-   * Calculates ideal rows and columns for a given piece count and image aspect ratio
+   * Calculates optimal rows and columns for a given piece count and aspect ratio
    */
   static calculateGrid(
     aspectRatio: number,
-    targetPieceCount: number,
+    desiredPieces: number,
     boardWidth: number,
     boardHeight: number
-  ): GridDimensions {
-    const rawCols = Math.sqrt(targetPieceCount * aspectRatio)
-    let cols = Math.round(rawCols)
-    let rows = Math.round(targetPieceCount / cols)
-
-    cols = Math.max(2, cols)
-    rows = Math.max(2, rows)
+  ): {
+    rows: number
+    cols: number
+    pieceWidth: number
+    pieceHeight: number
+  } {
+    const rawCols = Math.sqrt(desiredPieces * aspectRatio)
+    const cols = Math.max(2, Math.round(rawCols))
+    const rows = Math.max(2, Math.round(desiredPieces / cols))
 
     const pieceWidth = boardWidth / cols
     const pieceHeight = boardHeight / rows
@@ -42,7 +37,7 @@ export class JigsawGenerator {
   }
 
   /**
-   * Generates edge data for internal edges
+   * Generates edge jitter variations for unique tabs
    */
   private static createEdgeJitter(): EdgeJitter {
     return {
@@ -54,7 +49,7 @@ export class JigsawGenerator {
   }
 
   /**
-   * Generates all pieces for the puzzle with complementary matching edges
+   * Generates all pieces for the puzzle with complementary matching edges and cut style
    */
   static generatePieces(
     rows: number,
@@ -64,7 +59,7 @@ export class JigsawGenerator {
     boardWidth: number,
     boardHeight: number,
     enableRotation: boolean,
-    cutStyle: PuzzleCutStyle
+    cutStyle: PuzzleCutStyle = 'classic'
   ): PuzzlePiece[] {
     const pieces: PuzzlePiece[] = []
 
@@ -171,6 +166,7 @@ export class JigsawGenerator {
           },
           colorKey: '#1d4533',
           zIndex: idCounter,
+          cutStyle,
         }
 
         pieces.push(piece)
@@ -182,7 +178,7 @@ export class JigsawGenerator {
   }
 
   /**
-   * Draws a single edge from point A to point B with matching symmetrical tabs/blanks
+   * Draws a single classic jigsaw edge from point A to point B
    */
   private static drawJigsawEdge(
     ctx: CanvasRenderingContext2D | Path2D,
@@ -191,7 +187,7 @@ export class JigsawGenerator {
     shape: number,
     tabScale: number = 0.22
   ): void {
-    // If flat border edge, draw clean straight line directly to B
+    // If flat outer boundary border edge, draw straight line to B
     if (shape === 0) {
       ctx.lineTo(pB.x, pB.y)
       return
@@ -219,6 +215,9 @@ export class JigsawGenerator {
       y: pA.y + uy * (t * L) + vy * s,
     })
 
+    // -------------------------------------------------------------
+    // STYLE 3: CLASSIC (Smooth Rounded Bézier Puzzle Tabs)
+    // -------------------------------------------------------------
     // 1. Lead-in straight shoulder to neck base
     const p1 = P(0.35, 0)
     ctx.lineTo(p1.x, p1.y)
