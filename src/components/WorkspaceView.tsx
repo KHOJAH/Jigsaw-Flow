@@ -35,6 +35,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [isTrayOpen, setIsTrayOpen] = useState<boolean>(true) // Open by default for easy piece pickup
   const [isAutoSolving, setIsAutoSolving] = useState<boolean>(false)
   const [inspectingPiece, setInspectingPiece] = useState<PuzzlePiece | null>(null)
+  const [hintedPiece, setHintedPiece] = useState<PuzzlePiece | null>(null)
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Marquee Selection & Group Management State
   const [selectedPieceIds, setSelectedPieceIds] = useState<Set<number>>(new Set())
@@ -134,7 +136,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             activeClusterRef.current,
             settings,
             selectedPieceIds,
-            marqueeBoxRef.current
+            marqueeBoxRef.current,
+            hintedPiece
           )
         }
       }
@@ -762,6 +765,77 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setSelectedPieceIds(new Set())
   }, [selectedPieceIds])
 
+  // Smart Hint & Target Slot Locator
+  const handleTriggerHint = useCallback(() => {
+    if (isAutoSolving) return
+
+    // Priority 1: If user has a piece selected, hint that piece!
+    let candidate: PuzzlePiece | undefined = undefined
+
+    if (selectedPieceIds.size > 0) {
+      candidate = pieces.find(
+        (p) => selectedPieceIds.has(p.id) && !p.isLockedToBoard
+      )
+    }
+
+    // Priority 2: Unlocked Corners
+    if (!candidate) {
+      const unlockedCorners = pieces.filter((p) => !p.isLockedToBoard && p.isCorner)
+      if (unlockedCorners.length > 0) {
+        candidate = unlockedCorners[0]
+      }
+    }
+
+    // Priority 3: Unlocked Edges
+    if (!candidate) {
+      const unlockedEdges = pieces.filter((p) => !p.isLockedToBoard && p.isEdge)
+      if (unlockedEdges.length > 0) {
+        candidate = unlockedEdges[0]
+      }
+    }
+
+    // Priority 4: Cluster Neighbors (Expand placed pieces outward organically)
+    if (!candidate) {
+      const placedPieces = pieces.filter((p) => p.isLockedToBoard)
+      if (placedPieces.length > 0) {
+        const neighbor = pieces.find((p) => {
+          if (p.isLockedToBoard) return false
+          return placedPieces.some(
+            (pl) => Math.abs(pl.gridRow - p.gridRow) + Math.abs(pl.gridCol - p.gridCol) === 1
+          )
+        })
+        if (neighbor) {
+          candidate = neighbor
+        }
+      }
+    }
+
+    // Priority 5: Any remaining unplaced Center piece
+    if (!candidate) {
+      const unplaced = pieces.filter((p) => !p.isLockedToBoard)
+      if (unplaced.length > 0) {
+        candidate = unplaced[0]
+      }
+    }
+
+    if (!candidate) return
+
+    // If piece is in tray, ensure tray is expanded so player can see it
+    if (candidate.inTray && !isTrayOpen) {
+      setIsTrayOpen(true)
+    }
+
+    setHintedPiece(candidate)
+    audioEngine.playHint()
+
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current)
+    }
+    hintTimerRef.current = setTimeout(() => {
+      setHintedPiece(null)
+    }, 5000)
+  }, [isAutoSolving, selectedPieceIds, pieces, isTrayOpen])
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -775,6 +849,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           handleRotate()
         }
       }
+      if (e.code === 'KeyH') {
+        handleTriggerHint()
+      }
       if (e.code === 'KeyT') {
         setIsTrayOpen((prev) => !prev)
         audioEngine.playTrayToggle()
@@ -786,6 +863,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       }
       if (e.code === 'Escape') {
         setSelectedPieceIds(new Set())
+        setHintedPiece(null)
       }
     }
 
@@ -802,7 +880,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [handleRotate, handleRotateGroup, handleSendSelectedToTray, selectedPieceIds])
+  }, [handleRotate, handleRotateGroup, handleSendSelectedToTray, handleTriggerHint, selectedPieceIds])
 
   // Animated Auto-Complete with full intact assembly
   const handleAutoComplete = () => {
@@ -973,6 +1051,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         onSaveAndExit={onBackToLibrary}
         onAutoComplete={handleAutoComplete}
         onLocateBoardRegion={handleLocateBoardRegion}
+        onHint={handleTriggerHint}
       />
 
       {/* Floating Multi-Selection Actions Pill */}
@@ -1001,6 +1080,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       <PieceTray
         pieces={pieces}
         isOpen={isTrayOpen}
+        hintedPieceId={hintedPiece?.id ?? null}
         getPieceSprite={(id) => rendererRef.current.getPieceSprite(id)}
         onToggleOpen={() => {
           setIsTrayOpen(!isTrayOpen)

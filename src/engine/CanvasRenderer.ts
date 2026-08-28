@@ -118,7 +118,8 @@ export class CanvasRenderer {
     activeClusterId: number | null,
     settings: UserSettings,
     selectedPieceIds: Set<number> = new Set(),
-    marqueeBox: { x1: number; y1: number; x2: number; y2: number } | null = null
+    marqueeBox: { x1: number; y1: number; x2: number; y2: number } | null = null,
+    hintPiece: PuzzlePiece | null = null
   ): void {
     // -------------------------------------------------------------
     // LAYER 0: Table Surface Background
@@ -134,6 +135,34 @@ export class CanvasRenderer {
     // LAYER 0 & 1: Board Mat Frame & Ghost Overlay
     // -------------------------------------------------------------
     this.renderBoardFrame(ctx, boardWidth, boardHeight, settings)
+
+    // -------------------------------------------------------------
+    // LAYER 1.5: Smart Hint Target Beacon
+    // -------------------------------------------------------------
+    if (hintPiece) {
+      const now = performance.now()
+      const pulse = 0.5 + 0.45 * Math.sin(now / 180)
+
+      ctx.save()
+      ctx.translate(hintPiece.targetX, hintPiece.targetY)
+
+      ctx.beginPath()
+      JigsawGenerator.buildPiecePath(
+        ctx,
+        hintPiece.width,
+        hintPiece.height,
+        hintPiece.jitterProfile
+      )
+      ctx.fillStyle = `rgba(249, 210, 186, ${0.35 * pulse})`
+      ctx.fill()
+
+      ctx.strokeStyle = `rgba(255, 216, 192, ${pulse})`
+      ctx.lineWidth = 3.5
+      ctx.shadowColor = '#ffd8c0'
+      ctx.shadowBlur = 16 * pulse
+      ctx.stroke()
+      ctx.restore()
+    }
 
     const tablePieces = pieces.filter((p) => !p.inTray)
 
@@ -174,7 +203,7 @@ export class CanvasRenderer {
       )
       for (const piece of groundedPieces) {
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        const isSelected = selectedPieceIds.has(piece.id)
+        const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
         this.drawSinglePiece(ctx, piece, settings, 1.0, false, isThisFlashing, isSelected)
       }
 
@@ -190,7 +219,7 @@ export class CanvasRenderer {
       for (const piece of loosePieces) {
         const isClustered = (clusterSizes.get(piece.clusterId) || 0) > 1
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        const isSelected = selectedPieceIds.has(piece.id)
+        const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
         this.drawSinglePiece(ctx, piece, settings, 1.0, !isClustered, isThisFlashing, isSelected)
       }
 
@@ -215,7 +244,7 @@ export class CanvasRenderer {
         // Draw active piece sprites on top
         for (const piece of activePieces) {
           const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-          const isSelected = selectedPieceIds.has(piece.id)
+          const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
           this.drawSinglePiece(ctx, piece, settings, 1.0, true, isThisFlashing, isSelected)
         }
       }

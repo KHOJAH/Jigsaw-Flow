@@ -17,6 +17,7 @@ interface CanvasHUDProps {
   onSaveAndExit: () => void
   onAutoComplete?: () => void
   onLocateBoardRegion?: (normX: number, normY: number) => void
+  onHint?: () => void
 }
 
 export const CanvasHUD: React.FC<CanvasHUDProps> = ({
@@ -35,6 +36,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
   onSaveAndExit,
   onAutoComplete,
   onLocateBoardRegion,
+  onHint,
 }) => {
   const [showReferenceCard, setShowReferenceCard] = useState(false)
   const [showGhostSlider, setShowGhostSlider] = useState(false)
@@ -167,6 +169,17 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
             <span className="material-symbols-outlined text-lg">image</span>
           </button>
 
+          {/* Smart Hint Button */}
+          {onHint && (
+            <button
+              onClick={onHint}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-amber-500 hover:bg-amber-500/15 transition-all cursor-pointer active:scale-95"
+              title="Smart Hint: Reveal matching board slot & highlight piece (H)"
+            >
+              <span className="material-symbols-outlined text-lg">lightbulb</span>
+            </button>
+          )}
+
           {/* Zoom Controls */}
           <div className="h-5 w-px bg-outline-variant/40 mx-0.5" />
 
@@ -280,6 +293,18 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="text-on-surface-variant">Multi-Select</span>
               <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
                 Ctrl + Click / Drag Box
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-on-surface-variant">Smart Hint</span>
+              <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
+                H
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-on-surface-variant">Inspect Piece</span>
+              <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
+                Right Click / I
               </kbd>
             </div>
             <div className="flex justify-between items-center">

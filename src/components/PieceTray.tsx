@@ -38,6 +38,7 @@ const PieceThumbnail: React.FC<PieceThumbnailProps> = ({ piece, getPieceSprite }
 interface PieceTrayProps {
   pieces: PuzzlePiece[]
   isOpen: boolean
+  hintedPieceId?: number | null
   getPieceSprite?: (pieceId: number) => PieceSprite | undefined
   onToggleOpen: () => void
   onPopPiece: (pieceId: number) => void
@@ -50,6 +51,7 @@ interface PieceTrayProps {
 export const PieceTray: React.FC<PieceTrayProps> = ({
   pieces,
   isOpen,
+  hintedPieceId,
   getPieceSprite,
   onToggleOpen,
   onPopPiece,
@@ -59,6 +61,14 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   onTidyTab,
 }) => {
   const [filter, setFilter] = useState<TrayFilter>('all')
+
+  // Auto-scroll to hinted piece inside tray
+  useEffect(() => {
+    if (hintedPieceId !== null && hintedPieceId !== undefined) {
+      const el = document.getElementById(`tray-piece-${hintedPieceId}`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [hintedPieceId])
 
   const trayPieces = pieces.filter((p) => p.inTray)
   const cornerCount = trayPieces.filter((p) => p.isCorner).length
@@ -221,20 +231,27 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
             </div>
           ) : (
             <div className="flex gap-md items-center py-xs min-w-max">
-              {filteredPieces.map((piece) => (
-                <div
-                  key={piece.id}
-                  onPointerDown={(e) => handlePointerDown(piece.id, e)}
-                  onContextMenu={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onInspectPiece(piece)
-                  }}
-                  className="w-[84px] h-[84px] bg-surface-container-lowest/90 rounded-2xl border border-outline-variant/50 hover:border-primary hover:shadow-xl hover:-translate-y-1.5 transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none shadow-sm"
-                  title={`Piece #${piece.id + 1} (${
-                    piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
-                  }) • Click to pop • Drag to move • Right-click to inspect`}
-                >
+              {filteredPieces.map((piece) => {
+                const isHinted = piece.id === hintedPieceId
+                return (
+                  <div
+                    key={piece.id}
+                    id={`tray-piece-${piece.id}`}
+                    onPointerDown={(e) => handlePointerDown(piece.id, e)}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onInspectPiece(piece)
+                    }}
+                    className={`w-[84px] h-[84px] rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none shadow-sm ${
+                      isHinted
+                        ? 'border-primary ring-4 ring-primary/80 bg-primary-container/40 shadow-2xl scale-110 animate-pulse z-20'
+                        : 'bg-surface-container-lowest/90 border-outline-variant/50 hover:border-primary hover:shadow-xl hover:-translate-y-1.5'
+                    }`}
+                    title={`Piece #${piece.id + 1} (${
+                      piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
+                    }) • Click to pop • Drag to move • Right-click to inspect`}
+                  >
                   {/* Corner / Edge Badge Indicator */}
                   {piece.isCorner ? (
                     <span className="absolute top-1.5 left-1.5 px-1 py-0.2 bg-tertiary/20 text-tertiary text-[9px] font-bold rounded ring-1 ring-tertiary/30">
@@ -275,7 +292,8 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                     <PieceThumbnail piece={piece} getPieceSprite={getPieceSprite} />
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

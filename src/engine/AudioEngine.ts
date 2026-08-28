@@ -180,6 +180,36 @@ class AudioEngine {
   }
 
   /**
+   * Soothing two-tone harmonic hint chime (C5 -> G5)
+   */
+  public playHint() {
+    if (this.sfxVolume <= 0) return
+    this.initContext()
+    if (!this.ctx) return
+
+    const now = this.ctx.currentTime
+    const notes = [523.25, 783.99] // C5, G5
+
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return
+      const t = now + idx * 0.12
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, t)
+
+      gain.gain.setValueAtTime(0.24 * this.sfxVolume, t)
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9)
+
+      osc.connect(gain)
+      gain.connect(this.ctx.destination)
+      osc.start(t)
+      osc.stop(t + 0.95)
+    })
+  }
+
+  /**
    * Grand victory arpeggio chime on puzzle completion
    */
   public playVictory() {
