@@ -1,0 +1,176 @@
+import { PuzzleSave, UserSettings } from '../types/puzzle'
+
+const LOCAL_STORAGE_SAVES_KEY = 'jigsaw_flow_saves'
+const LOCAL_STORAGE_SETTINGS_KEY = 'jigsaw_flow_settings'
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  musicVolume: 40,
+  sfxVolume: 85,
+  snapSensitivity: 'medium',
+  dragInertia: true,
+  tableSurface: 'felt',
+  edgeHighlight: 30,
+  showGhostOverlay: false,
+  ghostOpacity: 25,
+  allowAutoComplete: true,
+  seamlessBlending: true,
+}
+
+export class StorageService {
+  /**
+   * Save a puzzle game state
+   */
+  static async saveGame(save: PuzzleSave): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (window.electronAPI) {
+        return await window.electronAPI.saveGame(save.id, save)
+      } else {
+        const existing = this.loadBrowserSaves()
+        const filtered = existing.filter((s) => s.id !== save.id)
+        filtered.unshift(save)
+        localStorage.setItem(LOCAL_STORAGE_SAVES_KEY, JSON.stringify(filtered))
+        return { success: true }
+      }
+    } catch (err: any) {
+      console.error('Error saving game:', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  /**
+   * Load all saved puzzles
+   */
+  static async loadSaves(): Promise<PuzzleSave[]> {
+    try {
+      if (window.electronAPI) {
+        const saves = await window.electronAPI.loadSaves()
+        return (saves || []).sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+      } else {
+        return this.loadBrowserSaves()
+      }
+    } catch (err) {
+      console.error('Error loading saves:', err)
+      return []
+    }
+  }
+
+  /**
+   * Delete a saved game
+   */
+  static async deleteSave(id: string): Promise<boolean> {
+    try {
+      if (window.electronAPI) {
+        const res = await window.electronAPI.deleteSave(id)
+        return res.success
+      } else {
+        const existing = this.loadBrowserSaves()
+        const filtered = existing.filter((s) => s.id !== id)
+        localStorage.setItem(LOCAL_STORAGE_SAVES_KEY, JSON.stringify(filtered))
+        return true
+      }
+    } catch (err) {
+      console.error('Error deleting save:', err)
+      return false
+    }
+  }
+
+  /**
+   * Export save file (.jigsaw format)
+   */
+  static async exportSave(save: PuzzleSave): Promise<boolean> {
+    try {
+      if (window.electronAPI) {
+        const res = await window.electronAPI.exportSave(save.id, save)
+        return res.success
+      } else {
+        const blob = new Blob([JSON.stringify(save, null, 2)], {
+          type: 'application/json',
+        })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `puzzle-save-${save.id}.jigsaw`
+        a.click()
+        URL.revokeObjectURL(url)
+        return true
+      }
+    } catch (err) {
+      console.error('Error exporting save:', err)
+      return false
+    }
+  }
+
+  /**
+   * Import save file
+   */
+  static async importSave(): Promise<PuzzleSave | null> {
+    try {
+      if (window.electronAPI) {
+        return await window.electronAPI.importSave()
+      } else {
+        return new Promise((resolve) => {
+          const input = document.createElement('input')
+          input.type = 'file'
+          input.accept = '.jigsaw,.json'
+          input.onchange = async (e: any) => {
+            const file = e.target.files?.[0]
+            if (!file) {
+              resolve(null)
+              return
+            }
+            const text = await file.text()
+            const parsed = JSON.parse(text)
+            resolve(parsed)
+          }
+          input.click()
+        })
+      }
+    } catch (err) {
+      console.error('Error importing save:', err)
+      return null
+    }
+  }
+
+  /**
+   * Load user preferences
+   */
+  static loadSettings(): UserSettings {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY)
+      if (raw) {
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err)
+    }
+    return { ...DEFAULT_SETTINGS }
+  }
+
+  /**
+   * Save user preferences
+   */
+  static saveSettings(settings: UserSettings) {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings))
+    } catch (err) {
+      console.error('Error saving settings:', err)
+    }
+  }
+
+  private static loadBrowserSaves(): PuzzleSave[] {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_SAVES_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        return Array.isArray(parsed)
+          ? parsed.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+          : []
+      }
+    } catch (err) {
+      console.error('Error reading browser saves:', err)
+    }
+    return []
+  }
+}
