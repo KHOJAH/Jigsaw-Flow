@@ -211,12 +211,25 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                 />
               </div>
 
-              {/* Piece Count Slider */}
+              {/* Piece Count Slider with x1, x2, x3 Difficulty Multipliers */}
               <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30">
                 <div className="flex justify-between items-center mb-xs">
-                  <label className="font-label-md text-label-md text-on-surface font-semibold">
-                    Piece Count
-                  </label>
+                  <div>
+                    <label className="font-label-md text-label-md text-on-surface font-semibold block">
+                      Difficulty & Pieces
+                    </label>
+                    <span className="text-[11px] text-on-surface-variant">
+                      {actualPieces < 35
+                        ? 'Relaxed (x1)'
+                        : actualPieces < 75
+                        ? 'Easy (x2)'
+                        : actualPieces < 180
+                        ? 'Medium (x3)'
+                        : actualPieces < 380
+                        ? 'Hard (x4)'
+                        : 'Master (x5)'}
+                    </span>
+                  </div>
                   <span className="font-headline-md text-xl text-primary font-bold">
                     {actualPieces}{' '}
                     <span className="text-xs text-on-surface-variant font-normal">
@@ -233,20 +246,27 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                   onChange={(e) => setPieceCount(parseInt(e.target.value, 10))}
                   className="w-full cursor-pointer accent-primary"
                 />
-                {/* Preset Pills */}
-                <div className="flex justify-between gap-1 mt-sm">
-                  {[24, 50, 100, 250, 500].map((preset) => (
+                {/* Preset x1, x2, x3 Multiplier Pills */}
+                <div className="grid grid-cols-5 gap-1 mt-sm">
+                  {[
+                    { count: 24, mult: 'x1' },
+                    { count: 48, mult: 'x2' },
+                    { count: 96, mult: 'x3' },
+                    { count: 250, mult: 'x4' },
+                    { count: 500, mult: 'x5' },
+                  ].map(({ count, mult }) => (
                     <button
-                      key={preset}
+                      key={mult}
                       type="button"
-                      onClick={() => setPieceCount(preset)}
-                      className={`px-sm py-1 rounded text-xs font-semibold flex-1 text-center transition-colors ${
-                        Math.abs(actualPieces - preset) <= 8
-                          ? 'bg-primary text-on-primary'
+                      onClick={() => setPieceCount(count)}
+                      className={`py-1.5 px-1 rounded-lg text-xs font-bold text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                        Math.abs(actualPieces - count) <= (count < 100 ? 12 : 50)
+                          ? 'bg-primary text-on-primary shadow-sm scale-105'
                           : 'bg-surface-variant text-on-surface-variant hover:bg-surface-container-high'
                       }`}
                     >
-                      {preset}
+                      <span className="text-xs font-extrabold">{mult}</span>
+                      <span className="text-[10px] opacity-80">{count}p</span>
                     </button>
                   ))}
                 </div>

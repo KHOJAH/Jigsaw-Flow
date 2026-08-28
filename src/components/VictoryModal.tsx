@@ -11,7 +11,8 @@ interface VictoryModalProps {
     moves: number
     accuracy: number
   }
-  onReplay: () => void
+  onRestartFresh: () => void
+  onReplayHarder: (nextPieces: number) => void
   onReturnToLibrary: () => void
 }
 
@@ -21,7 +22,8 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   imageSrc,
   totalPieces,
   stats,
-  onReplay,
+  onRestartFresh,
+  onReplayHarder,
   onReturnToLibrary,
 }) => {
   useEffect(() => {
@@ -70,6 +72,16 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
     a.download = `${title.toLowerCase().replace(/\s+/g, '-')}-completed.jpg`
     a.click()
   }
+
+  // Calculate next difficulty tier multiplier: x1 -> x2 -> x3 -> x4 -> x5
+  const getNextDifficultyTier = () => {
+    if (totalPieces <= 35) return { mult: 'x2', count: 48 }
+    if (totalPieces <= 75) return { mult: 'x3', count: 96 }
+    if (totalPieces <= 180) return { mult: 'x4', count: 250 }
+    return { mult: 'x5', count: 500 }
+  }
+
+  const nextTier = getNextDifficultyTier()
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-md select-none overflow-hidden animate-in fade-in duration-300">
@@ -129,24 +141,26 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-sm w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm w-full">
           <button
-            onClick={handleDownloadArtwork}
-            className="flex-1 py-sm px-md rounded-xl bg-surface hover:bg-surface-variant text-on-surface font-semibold text-sm border border-outline-variant/40 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+            onClick={onRestartFresh}
+            className="py-sm px-md rounded-xl bg-surface hover:bg-surface-variant text-on-surface font-semibold text-sm border border-outline-variant/40 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            title="Play same puzzle again from the beginning"
           >
-            <span className="material-symbols-outlined text-lg">download</span>
-            <span>Save Artwork</span>
+            <span className="material-symbols-outlined text-lg">restart_alt</span>
+            <span>Restart (Fresh)</span>
           </button>
           <button
-            onClick={onReplay}
-            className="flex-1 py-sm px-md rounded-xl bg-secondary hover:bg-secondary/90 text-on-secondary font-semibold text-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
+            onClick={() => onReplayHarder(nextTier.count)}
+            className="py-sm px-md rounded-xl bg-secondary hover:bg-secondary/90 text-on-secondary font-bold text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+            title={`Generate harder puzzle with ${nextTier.mult} (${nextTier.count} pieces)`}
           >
-            <span className="material-symbols-outlined text-lg">replay</span>
-            <span>Replay (Harder)</span>
+            <span className="material-symbols-outlined text-lg">trending_up</span>
+            <span>Harder ({nextTier.mult})</span>
           </button>
           <button
             onClick={onReturnToLibrary}
-            className="flex-1 py-sm px-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-md"
+            className="py-sm px-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
           >
             <span className="material-symbols-outlined text-lg">grid_view</span>
             <span>Return Home</span>
