@@ -96,36 +96,11 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   }
 
   const handlePointerDown = (pieceId: number, e: React.PointerEvent) => {
-    // Only handle Primary Left Click for drag and pop!
+    // Primary Left Click initiates seamless drag & pop
     if (e.button !== 0) return
-
     e.preventDefault()
     e.stopPropagation()
-
-    const startX = e.clientX
-    const startY = e.clientY
-    let hasStartedDrag = false
-
-    const handlePointerMove = (moveEv: PointerEvent) => {
-      const dist = Math.hypot(moveEv.clientX - startX, moveEv.clientY - startY)
-      if (dist > 8 && !hasStartedDrag) {
-        hasStartedDrag = true
-        window.removeEventListener('pointermove', handlePointerMove)
-        window.removeEventListener('pointerup', handlePointerUp)
-        onStartDragPiece(pieceId, moveEv.clientX, moveEv.clientY)
-      }
-    }
-
-    const handlePointerUp = () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
-      if (!hasStartedDrag) {
-        onPopPiece(pieceId)
-      }
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp)
+    onStartDragPiece(pieceId, e.clientX, e.clientY)
   }
 
   return (
@@ -154,7 +129,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                 onClick={() => setFilter('all')}
                 className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
                   filter === 'all'
-                    ? 'bg-primary text-on-primary shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-xs'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -164,7 +139,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                 onClick={() => setFilter('corners')}
                 className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
                   filter === 'corners'
-                    ? 'bg-primary text-on-primary shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-xs'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -174,7 +149,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                 onClick={() => setFilter('edges')}
                 className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
                   filter === 'edges'
-                    ? 'bg-primary text-on-primary shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-xs'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -184,7 +159,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                 onClick={() => setFilter('centers')}
                 className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
                   filter === 'centers'
-                    ? 'bg-primary text-on-primary shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-xs'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -193,15 +168,14 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
             </div>
           </div>
 
-          {/* Context-Aware Actions for Current Tab */}
+          {/* Quick Tray Sorting Actions */}
           <div className="flex items-center gap-xs">
             <button
               onClick={() => onScatterTab(filter)}
-              disabled={filteredPieces.length === 0}
-              className="px-sm py-1 text-xs font-semibold rounded-lg bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
-              title={`Scatter only ${getTabLabel()} pieces onto table`}
+              className="px-sm py-1 text-xs font-semibold rounded-lg bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/30 transition-all flex items-center gap-1 cursor-pointer"
+              title={`Pop all ${getTabLabel()} pieces neatly onto the table perimeter`}
             >
-              <span className="material-symbols-outlined text-sm">dashboard_customize</span>
+              <span className="material-symbols-outlined text-sm">grid_view</span>
               <span>Scatter {getTabLabel()}</span>
             </button>
             <button
@@ -219,7 +193,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
         <div
           className={`bg-surface-container-high/95 border border-outline-variant/40 shadow-2xl overflow-x-auto overflow-y-hidden backdrop-blur-md transition-all duration-300 ease-in-out ${
             isOpen
-              ? 'max-h-56 opacity-100 p-md'
+              ? 'max-h-60 opacity-100 p-md'
               : 'max-h-0 opacity-0 p-0 border-t-0 pointer-events-none'
           }`}
         >
@@ -243,22 +217,22 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                       e.stopPropagation()
                       onInspectPiece(piece)
                     }}
-                    className={`w-[84px] h-[84px] rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none shadow-sm ${
+                    className={`w-[96px] h-[96px] rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none shadow-sm ${
                       isHinted
                         ? 'border-primary ring-4 ring-primary/80 bg-primary-container/40 shadow-2xl scale-110 animate-pulse z-20'
-                        : 'bg-surface-container-lowest/90 border-outline-variant/50 hover:border-primary hover:shadow-xl hover:-translate-y-1.5'
+                        : 'bg-surface-container-lowest/60 hover:bg-surface-container-lowest/95 border-outline-variant/40 hover:border-primary/80 shadow-inner hover:shadow-lg hover:-translate-y-1'
                     }`}
                     title={`Piece #${piece.id + 1} (${
                       piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
-                    }) • Click to pop • Drag to move • Right-click to inspect`}
+                    }) • Drag onto board • Click to pop • Right-click to inspect`}
                   >
                   {/* Corner / Edge Badge Indicator */}
                   {piece.isCorner ? (
-                    <span className="absolute top-1.5 left-1.5 px-1 py-0.2 bg-tertiary/20 text-tertiary text-[9px] font-bold rounded ring-1 ring-tertiary/30">
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-tertiary-container/90 text-on-tertiary-container text-[9px] font-bold rounded-md backdrop-blur-sm shadow-xs">
                       Corner
                     </span>
                   ) : piece.isEdge ? (
-                    <span className="absolute top-1.5 left-1.5 px-1 py-0.2 bg-secondary/20 text-secondary text-[9px] font-bold rounded ring-1 ring-secondary/30">
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-secondary-container/90 text-on-secondary-container text-[9px] font-bold rounded-md backdrop-blur-sm shadow-xs">
                       Edge
                     </span>
                   ) : null}

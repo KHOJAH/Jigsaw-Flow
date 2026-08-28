@@ -353,7 +353,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       pieceId,
       startClientX: clientX,
       startClientY: clientY,
-      moved: true,
+      moved: false,
     }
 
     setSelectedPieceIds(new Set())
@@ -395,6 +395,17 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       const canvas = canvasRef.current
       if (!canvas) return
       const rect = canvas.getBoundingClientRect()
+
+      // Track drag distance from tray
+      if (draggedFromTrayRef.current && !draggedFromTrayRef.current.moved) {
+        const dist = Math.hypot(
+          e.clientX - draggedFromTrayRef.current.startClientX,
+          e.clientY - draggedFromTrayRef.current.startClientY
+        )
+        if (dist > 6) {
+          draggedFromTrayRef.current.moved = true
+        }
+      }
 
       // Canvas Panning
       if (isPanningRef.current && panStartRef.current) {
@@ -477,10 +488,38 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         }
       }
 
-      // If dragged from tray and released back over the tray dock, return to tray
+      // Handle Quick-Click Pop vs Direct Drag from Tray
       if (draggedFromTrayRef.current) {
-        const { pieceId } = draggedFromTrayRef.current
+        const { pieceId, moved } = draggedFromTrayRef.current
+        const targetPiece = pieces.find((p) => p.id === pieceId)
+
+        if (!moved && targetPiece) {
+          // QUICK CLICK: Pop to side of image cleanly!
+          setPieces((prev) => {
+            const tablePieces = prev.filter((p) => !p.inTray && p.id !== pieceId)
+            const openSlot = ClusterManager.findNextOpenSlot(
+              tablePieces,
+              puzzle.boardWidth,
+              puzzle.boardHeight,
+              targetPiece.width,
+              targetPiece.height
+            )
+            return prev.map((p) =>
+              p.id === pieceId
+                ? { ...p, inTray: false, x: openSlot.x, y: openSlot.y }
+                : p
+            )
+          })
+          audioEngine.playPickup()
+          dragOffsetsRef.current.clear()
+          activeClusterRef.current = null
+          dragStartPosRef.current = null
+          draggedFromTrayRef.current = null
+          return
+        }
+
         if (e.clientY > window.innerHeight - 130) {
+          // Dragged and released back inside tray dock: return to tray
           setPieces((prev) =>
             prev.map((p) =>
               p.id === pieceId ? { ...p, inTray: true, x: 0, y: 0 } : p
