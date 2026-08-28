@@ -109,8 +109,7 @@ export class CanvasRenderer {
     boardWidth: number,
     boardHeight: number,
     activeClusterId: number | null,
-    settings: UserSettings,
-    borderFilterActive: boolean
+    settings: UserSettings
   ): void {
     // -------------------------------------------------------------
     // LAYER 0: Table Surface Background
@@ -165,10 +164,8 @@ export class CanvasRenderer {
         (p) => p.isLockedToBoard && p.clusterId !== activeClusterId
       )
       for (const piece of groundedPieces) {
-        const isDimmed = borderFilterActive && !piece.isEdge
-        const opacity = isDimmed ? 0.25 : 1.0
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        this.drawSinglePiece(ctx, piece, settings, opacity, false, isThisFlashing)
+        this.drawSinglePiece(ctx, piece, settings, 1.0, false, isThisFlashing)
       }
 
       // -------------------------------------------------------------
@@ -181,11 +178,9 @@ export class CanvasRenderer {
       loosePieces.sort((a, b) => a.zIndex - b.zIndex)
 
       for (const piece of loosePieces) {
-        const isDimmed = borderFilterActive && !piece.isEdge
-        const opacity = isDimmed ? 0.25 : 1.0
         const isClustered = (clusterSizes.get(piece.clusterId) || 0) > 1
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        this.drawSinglePiece(ctx, piece, settings, opacity, !isClustered, isThisFlashing)
+        this.drawSinglePiece(ctx, piece, settings, 1.0, !isClustered, isThisFlashing)
       }
 
       // -------------------------------------------------------------

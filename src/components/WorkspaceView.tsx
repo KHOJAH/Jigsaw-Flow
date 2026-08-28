@@ -31,7 +31,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [movesCount, setMovesCount] = useState<number>(puzzle.movesCount)
   const [snapCount, setSnapCount] = useState<number>(puzzle.snapCount)
   const [isTrayOpen, setIsTrayOpen] = useState<boolean>(true) // Open by default for easy piece pickup
-  const [borderFilterActive, setBorderFilterActive] = useState<boolean>(false)
   const [isAutoSolving, setIsAutoSolving] = useState<boolean>(false)
 
   // Viewport transformation state (World translation and zoom scale)
@@ -118,8 +117,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             puzzle.boardWidth,
             puzzle.boardHeight,
             activeClusterRef.current,
-            settings,
-            borderFilterActive
+            settings
           )
         }
       }
@@ -130,7 +128,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     renderLoop()
 
     return () => cancelAnimationFrame(animationFrameId)
-  }, [viewport, pieces, puzzle.boardWidth, puzzle.boardHeight, settings, borderFilterActive])
+  }, [viewport, pieces, puzzle.boardWidth, puzzle.boardHeight, settings])
 
   // Convert screen coordinates to world coordinates: P_world = (P_screen - Translation) / Scale
   const screenToWorld = useCallback(
@@ -433,9 +431,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         setIsTrayOpen((prev) => !prev)
         audioEngine.playTrayToggle()
       }
-      if (e.code === 'KeyB') {
-        setBorderFilterActive((prev) => !prev)
-      }
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -626,9 +621,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         progressPct={dsuProgress}
         elapsedTime={elapsedTime}
         zoomLevel={viewport.scale}
-        borderFilterActive={borderFilterActive}
         settings={settings}
-        onToggleBorderFilter={() => setBorderFilterActive(!borderFilterActive)}
         onUpdateSettings={onUpdateSettings}
         onZoomIn={() =>
           setViewport((prev) => ({ ...prev, scale: Math.min(prev.scale * 1.2, 3.0) }))

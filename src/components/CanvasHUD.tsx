@@ -9,9 +9,7 @@ interface CanvasHUDProps {
   progressPct: number
   elapsedTime: number
   zoomLevel: number
-  borderFilterActive: boolean
   settings: UserSettings
-  onToggleBorderFilter: () => void
   onUpdateSettings: (newSettings: Partial<UserSettings>) => void
   onZoomIn: () => void
   onZoomOut: () => void
@@ -29,9 +27,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
   progressPct,
   elapsedTime,
   zoomLevel,
-  borderFilterActive,
   settings,
-  onToggleBorderFilter,
   onUpdateSettings,
   onZoomIn,
   onZoomOut,
@@ -119,19 +115,6 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="hidden md:inline">Auto Solve</span>
             </button>
           )}
-
-          {/* Border Pieces Filter Toggle */}
-          <button
-            onClick={onToggleBorderFilter}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-              borderFilterActive
-                ? 'bg-primary text-on-primary shadow-sm'
-                : 'text-on-surface-variant hover:bg-surface-variant'
-            }`}
-            title="Isolate Border / Edge Pieces"
-          >
-            <span className="material-symbols-outlined text-lg">filter_frames</span>
-          </button>
 
           {/* Ghost Overlay Toggle */}
           <div className="relative">
@@ -230,7 +213,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
             </span>
             <button
               onClick={() => setShowReferenceCard(false)}
-              className="text-on-surface-variant hover:text-on-surface p-0.5"
+              className="text-on-surface-variant hover:text-on-surface p-0.5 cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">close</span>
             </button>
@@ -257,7 +240,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
             </span>
             <button
               onClick={() => setShowKeybindHelp(false)}
-              className="text-on-surface-variant hover:text-on-surface"
+              className="text-on-surface-variant hover:text-on-surface cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">close</span>
             </button>
@@ -267,6 +250,12 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="text-on-surface-variant">Pan Canvas</span>
               <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
                 Space + Drag / Mid Click
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-on-surface-variant">Pan Left / Right</span>
+              <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
+                Shift + Scroll
               </kbd>
             </div>
             <div className="flex justify-between items-center">
@@ -285,12 +274,6 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="text-on-surface-variant">Toggle Tray</span>
               <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
                 T
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-on-surface-variant">Border Filter</span>
-              <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
-                B
               </kbd>
             </div>
           </div>
