@@ -7,6 +7,7 @@ interface LibraryViewProps {
   completedSaves: PuzzleSave[]
   activePuzzle: PuzzleSave | null
   onResumePuzzle: (save: PuzzleSave) => void
+  onReplayPuzzle: (save: PuzzleSave) => void
   onDeleteSave: (id: string) => void
   onSelectImage: (imageSrc: string, title?: string, defaultPieces?: number) => void
   onOpenBrowseFiles: () => void
@@ -17,6 +18,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   completedSaves,
   activePuzzle,
   onResumePuzzle,
+  onReplayPuzzle,
   onDeleteSave,
   onSelectImage,
   onOpenBrowseFiles,
@@ -344,12 +346,25 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     : 'Completed'}
                 </p>
               </div>
-              <button
-                onClick={() => setInspectImage(null)}
-                className="px-md py-sm bg-primary text-on-primary rounded-lg font-semibold hover:bg-primary-container transition-colors"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-sm">
+                <button
+                  onClick={() => {
+                    const toReplay = inspectImage
+                    setInspectImage(null)
+                    onReplayPuzzle(toReplay)
+                  }}
+                  className="px-md py-sm bg-secondary text-on-secondary rounded-lg font-semibold hover:bg-secondary/90 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-base">replay</span>
+                  <span>Replay Puzzle</span>
+                </button>
+                <button
+                  onClick={() => setInspectImage(null)}
+                  className="px-md py-sm bg-surface-variant text-on-surface rounded-lg font-semibold hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

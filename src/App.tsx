@@ -69,7 +69,7 @@ export const App: React.FC = () => {
       if (res && res.dataUrl) {
         setImportImageSrc(res.dataUrl)
         setImportInitialTitle(res.fileName.replace(/\.[^/.]+$/, ''))
-        setImportInitialPieces(50)
+        setImportInitialPieces(48)
         setIsImportModalOpen(true)
       }
     } else {
@@ -84,7 +84,7 @@ export const App: React.FC = () => {
             if (event.target?.result) {
               setImportImageSrc(event.target.result as string)
               setImportInitialTitle(file.name.replace(/\.[^/.]+$/, ''))
-              setImportInitialPieces(50)
+              setImportInitialPieces(48)
               setIsImportModalOpen(true)
             }
           }
@@ -99,7 +99,7 @@ export const App: React.FC = () => {
   const handleSelectImage = (
     imageSrc: string,
     title: string = 'Custom Jigsaw',
-    defaultPieces: number = 50
+    defaultPieces: number = 48
   ) => {
     setImportImageSrc(imageSrc)
     setImportInitialTitle(title)
@@ -182,10 +182,46 @@ export const App: React.FC = () => {
     setActiveTab('workspace')
   }
 
-  // Resume puzzle from library
-  const handleResumePuzzle = (save: PuzzleSave) => {
-    setActivePuzzle(save)
+  // Restart puzzle from beginning with pieces cleanly reset in organizer tray
+  const handleRestartPuzzle = async (save: PuzzleSave) => {
+    const resetPieces: PuzzlePiece[] = save.pieces.map((p, idx) => ({
+      ...p,
+      inTray: true,
+      isLockedToBoard: false,
+      clusterId: p.id,
+      x: 0,
+      y: 0,
+      rotation: save.rotationEnabled
+        ? [0, 90, 180, 270][Math.floor(Math.random() * 4)]
+        : 0,
+      zIndex: idx,
+    }))
+
+    const freshSave: PuzzleSave = {
+      ...save,
+      pieces: resetPieces,
+      status: 'in-progress',
+      elapsedTime: 0,
+      movesCount: 0,
+      snapCount: 0,
+      placedPieces: 0,
+      updatedAt: new Date().toISOString(),
+    }
+
+    await StorageService.saveGame(freshSave)
+    setSaves((prev) => prev.map((s) => (s.id === freshSave.id ? freshSave : s)))
+    setActivePuzzle(freshSave)
     setActiveTab('workspace')
+  }
+
+  // Resume in-progress puzzle from library
+  const handleResumePuzzle = (save: PuzzleSave) => {
+    if (save.status === 'completed') {
+      handleRestartPuzzle(save)
+    } else {
+      setActivePuzzle(save)
+      setActiveTab('workspace')
+    }
   }
 
   // Update puzzle state in real-time
@@ -279,29 +315,55 @@ export const App: React.FC = () => {
               completedSaves={completedSaves}
               activePuzzle={activePuzzle}
               onResumePuzzle={handleResumePuzzle}
+              onReplayPuzzle={handleRestartPuzzle}
               onDeleteSave={handleDeleteSave}
               onSelectImage={handleSelectImage}
               onOpenBrowseFiles={handleOpenBrowseFiles}
             />
           )}
 
-          {activeTab === 'workspace' && activePuzzle && (
-            <WorkspaceView
-              puzzle={activePuzzle}
-              settings={settings}
-              onUpdatePuzzle={handleUpdatePuzzle}
-              onUpdateSettings={(newSettings) =>
-                setSettings((prev) => ({ ...prev, ...newSettings }))
-              }
-              onVictory={handleVictory}
-              onBackToLibrary={() => setActiveTab('library')}
-            />
+          {activeTab === 'workspace' && (
+            activePuzzle ? (
+              <WorkspaceView
+                key={activePuzzle.id}
+                puzzle={activePuzzle}
+                settings={settings}
+                onUpdatePuzzle={handleUpdatePuzzle}
+                onUpdateSettings={(newSettings) =>
+                  setSettings((prev) => ({ ...prev, ...newSettings }))
+                }
+                onVictory={handleVictory}
+                onBackToLibrary={() => {
+                  setActivePuzzle(null)
+                  setActiveTab('library')
+                }}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-xl text-center bg-surface-container-lowest">
+                <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-primary mb-md shadow-sm">
+                  <span className="material-symbols-outlined text-3xl">extension_off</span>
+                </div>
+                <h3 className="font-headline-md text-xl font-bold text-primary mb-xs">
+                  Workspace Cleared
+                </h3>
+                <p className="text-sm text-on-surface-variant max-w-sm mb-lg">
+                  Select a puzzle from your library or import a new picture to begin solving.
+                </p>
+                <button
+                  onClick={() => setActiveTab('library')}
+                  className="px-lg py-sm bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary-container transition-all cursor-pointer shadow-md flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-lg">grid_view</span>
+                  <span>Go to Library</span>
+                </button>
+              </div>
+            )
           )}
 
           {activeTab === 'history' && (
             <HistoryView
               saves={saves}
-              onReplayPuzzle={handleResumePuzzle}
+              onReplayPuzzle={handleRestartPuzzle}
               onDeleteSave={handleDeleteSave}
             />
           )}
@@ -339,15 +401,20 @@ export const App: React.FC = () => {
           imageSrc={activePuzzle.imageSrc}
           totalPieces={activePuzzle.totalPieces}
           stats={victoryStats}
-          onReplay={() => {
+          onRestartFresh={() => {
+            setIsVictoryModalOpen(false)
+            handleRestartPuzzle(activePuzzle)
+          }}
+          onReplayHarder={(nextPieces) => {
             setIsVictoryModalOpen(false)
             setImportImageSrc(activePuzzle.imageSrc)
             setImportInitialTitle(`${activePuzzle.title} (Harder)`)
-            setImportInitialPieces(Math.min(500, activePuzzle.totalPieces * 2))
+            setImportInitialPieces(nextPieces)
             setIsImportModalOpen(true)
           }}
           onReturnToLibrary={() => {
             setIsVictoryModalOpen(false)
+            setActivePuzzle(null)
             setActiveTab('library')
           }}
         />
