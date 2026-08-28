@@ -280,6 +280,84 @@ export class ClusterManager {
   }
 
   /**
+   * Generates perimeter slot coordinates prioritized along the left and right sides of the image
+   */
+  static generatePerimeterSlots(
+    boardWidth: number,
+    boardHeight: number,
+    pieceWidth: number,
+    pieceHeight: number
+  ): { x: number; y: number }[] {
+    const slotSpacingX = pieceWidth * 1.25
+    const slotSpacingY = pieceHeight * 1.25
+    const marginOffset = 45
+    const slots: { x: number; y: number }[] = []
+
+    const sideRows = Math.max(3, Math.floor((boardHeight + 50) / slotSpacingY))
+
+    // Alternate between Left and Right columns so pieces distribute neatly on both sides of the image
+    for (let col = 0; col < 4; col++) {
+      // Left side column
+      for (let row = 0; row < sideRows; row++) {
+        slots.push({
+          x: -marginOffset - (col + 1) * slotSpacingX,
+          y: row * slotSpacingY,
+        })
+      }
+
+      // Right side column
+      for (let row = 0; row < sideRows; row++) {
+        slots.push({
+          x: boardWidth + marginOffset + col * slotSpacingX,
+          y: row * slotSpacingY,
+        })
+      }
+    }
+
+    // Top Strip (above the board if side columns fill up)
+    const topCols = Math.max(4, Math.floor((boardWidth + 300) / slotSpacingX))
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < topCols; col++) {
+        slots.push({
+          x: -150 + col * slotSpacingX,
+          y: -marginOffset - (row + 1) * slotSpacingY,
+        })
+      }
+    }
+
+    return slots
+  }
+
+  /**
+   * Finds the next open, unoccupied perimeter slot on the tabletop
+   */
+  static findNextOpenSlot(
+    tablePieces: PuzzlePiece[],
+    boardWidth: number,
+    boardHeight: number,
+    pieceWidth: number,
+    pieceHeight: number
+  ): { x: number; y: number } {
+    const slots = this.generatePerimeterSlots(boardWidth, boardHeight, pieceWidth, pieceHeight)
+    const threshold = Math.min(pieceWidth, pieceHeight) * 0.7
+
+    for (const slot of slots) {
+      const isOccupied = tablePieces.some(
+        (p) => !p.inTray && Math.hypot(p.x - slot.x, p.y - slot.y) < threshold
+      )
+      if (!isOccupied) {
+        return slot
+      }
+    }
+
+    // Fallback: slight random offset around left margin
+    return {
+      x: -pieceWidth * 1.5 - Math.random() * 50,
+      y: Math.random() * (boardHeight / 2),
+    }
+  }
+
+  /**
    * Deterministic Non-Overlapping Perimeter Scatter Layout
    * Arranges selected loose pieces into orderly non-overlapping grid slots around the board margins.
    */
@@ -293,54 +371,12 @@ export class ClusterManager {
     const positions = new Map<number, { x: number; y: number }>()
     if (piecesToScatter.length === 0) return positions
 
-    const slotSpacingX = pieceWidth * 1.2
-    const slotSpacingY = pieceHeight * 1.2
-    const marginOffset = 30 // Distance from board boundary
-
-    // Available slots pool in 4 perimeter strips
-    const availableSlots: { x: number; y: number }[] = []
-
-    // 1. Top Strip (2 rows above board)
-    const topCols = Math.floor((boardWidth + 300) / slotSpacingX)
-    for (let row = 0; row < 2; row++) {
-      for (let col = 0; col < topCols; col++) {
-        availableSlots.push({
-          x: -150 + col * slotSpacingX,
-          y: -marginOffset - (row + 1) * slotSpacingY,
-        })
-      }
-    }
-
-    // 2. Bottom Strip (2 rows below board)
-    for (let row = 0; row < 2; row++) {
-      for (let col = 0; col < topCols; col++) {
-        availableSlots.push({
-          x: -150 + col * slotSpacingX,
-          y: boardHeight + marginOffset + row * slotSpacingY,
-        })
-      }
-    }
-
-    // 3. Left Strip (2 cols left of board)
-    const sideRows = Math.floor(boardHeight / slotSpacingY)
-    for (let col = 0; col < 2; col++) {
-      for (let row = 0; row < sideRows; row++) {
-        availableSlots.push({
-          x: -marginOffset - (col + 1) * slotSpacingX,
-          y: row * slotSpacingY,
-        })
-      }
-    }
-
-    // 4. Right Strip (2 cols right of board)
-    for (let col = 0; col < 2; col++) {
-      for (let row = 0; row < sideRows; row++) {
-        availableSlots.push({
-          x: boardWidth + marginOffset + col * slotSpacingX,
-          y: row * slotSpacingY,
-        })
-      }
-    }
+    const availableSlots = this.generatePerimeterSlots(
+      boardWidth,
+      boardHeight,
+      pieceWidth,
+      pieceHeight
+    )
 
     // Assign each piece to a distinct slot
     piecesToScatter.forEach((piece, index) => {

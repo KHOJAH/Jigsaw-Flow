@@ -1,12 +1,47 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { PuzzlePiece } from '../types/puzzle'
+import { PieceSprite } from '../engine/CanvasRenderer'
 
 export type TrayFilter = 'all' | 'corners' | 'edges' | 'centers'
+
+interface PieceThumbnailProps {
+  piece: PuzzlePiece
+  getPieceSprite?: (pieceId: number) => PieceSprite | undefined
+}
+
+const PieceThumbnail: React.FC<PieceThumbnailProps> = ({ piece, getPieceSprite }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const sprite = getPieceSprite?.(piece.id)
+    if (sprite) {
+      canvas.width = sprite.width
+      canvas.height = sprite.height
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(sprite.canvas, 0, 0)
+    }
+  }, [piece.id, getPieceSprite])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full object-contain filter drop-shadow-md pointer-events-none transition-transform duration-200 group-hover:scale-105"
+    />
+  )
+}
 
 interface PieceTrayProps {
   pieces: PuzzlePiece[]
   isOpen: boolean
+  getPieceSprite?: (pieceId: number) => PieceSprite | undefined
   onToggleOpen: () => void
+  onPopPiece: (pieceId: number) => void
+  onInspectPiece: (piece: PuzzlePiece) => void
   onStartDragPiece: (pieceId: number, screenX: number, screenY: number) => void
   onScatterTab: (tab: TrayFilter) => void
   onTidyTab: (tab: TrayFilter) => void
@@ -15,7 +50,10 @@ interface PieceTrayProps {
 export const PieceTray: React.FC<PieceTrayProps> = ({
   pieces,
   isOpen,
+  getPieceSprite,
   onToggleOpen,
+  onPopPiece,
+  onInspectPiece,
   onStartDragPiece,
   onScatterTab,
   onTidyTab,
@@ -48,26 +86,50 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   }
 
   const handlePointerDown = (pieceId: number, e: React.PointerEvent) => {
+    // Only handle Primary Left Click for drag and pop!
+    if (e.button !== 0) return
+
     e.preventDefault()
     e.stopPropagation()
-    onStartDragPiece(pieceId, e.clientX, e.clientY)
+
+    const startX = e.clientX
+    const startY = e.clientY
+    let hasStartedDrag = false
+
+    const handlePointerMove = (moveEv: PointerEvent) => {
+      const dist = Math.hypot(moveEv.clientX - startX, moveEv.clientY - startY)
+      if (dist > 8 && !hasStartedDrag) {
+        hasStartedDrag = true
+        window.removeEventListener('pointermove', handlePointerMove)
+        window.removeEventListener('pointerup', handlePointerUp)
+        onStartDragPiece(pieceId, moveEv.clientX, moveEv.clientY)
+      }
+    }
+
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      if (!hasStartedDrag) {
+        onPopPiece(pieceId)
+      }
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
   }
 
   return (
-    <div
-      className={`fixed bottom-0 left-0 right-0 z-30 transition-all duration-300 ease-in-out select-none ${
-        isOpen ? 'translate-y-0' : 'translate-y-[calc(100%-44px)]'
-      }`}
-    >
+    <div className="fixed bottom-0 left-0 right-0 z-30 select-none">
       <div className="max-w-5xl mx-auto px-md">
-        {/* Tray Toggle Tab & Toolbar */}
-        <div className="bg-surface-container border border-b-0 border-outline-variant/40 rounded-t-2xl shadow-xl backdrop-blur-md px-md py-sm flex items-center justify-between">
+        {/* Tray Toggle Tab & Toolbar (Always Visible & Docked) */}
+        <div className="bg-surface-container border border-b-0 border-outline-variant/40 rounded-t-2xl shadow-xl backdrop-blur-md px-md py-sm flex items-center justify-between transition-colors">
           <div className="flex items-center gap-sm">
             <button
               onClick={onToggleOpen}
               className="flex items-center gap-xs font-headline-md text-sm text-primary font-bold hover:text-primary-container transition-colors cursor-pointer"
+              title={isOpen ? 'Collapse Piece Tray (T)' : 'Expand Piece Tray (T)'}
             >
-              <span className="material-symbols-outlined text-xl">
+              <span className="material-symbols-outlined text-xl transition-transform duration-300">
                 {isOpen ? 'expand_more' : 'expand_less'}
               </span>
               <span>Piece Tray</span>
@@ -77,50 +139,48 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
             </button>
 
             {/* 4 Categorized Filter Tabs */}
-            {isOpen && (
-              <div className="flex bg-surface-variant/70 rounded-lg p-0.5 ml-md gap-0.5 text-xs font-semibold">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
-                    filter === 'all'
-                      ? 'bg-primary text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  All ({trayPieces.length})
-                </button>
-                <button
-                  onClick={() => setFilter('corners')}
-                  className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
-                    filter === 'corners'
-                      ? 'bg-primary text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  Corners ({cornerCount})
-                </button>
-                <button
-                  onClick={() => setFilter('edges')}
-                  className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
-                    filter === 'edges'
-                      ? 'bg-primary text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  Edges ({edgeCount})
-                </button>
-                <button
-                  onClick={() => setFilter('centers')}
-                  className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
-                    filter === 'centers'
-                      ? 'bg-primary text-on-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  Centers ({centerCount})
-                </button>
-              </div>
-            )}
+            <div className="flex bg-surface-variant/70 rounded-lg p-0.5 ml-md gap-0.5 text-xs font-semibold">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                  filter === 'all'
+                    ? 'bg-primary text-on-primary shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                All ({trayPieces.length})
+              </button>
+              <button
+                onClick={() => setFilter('corners')}
+                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                  filter === 'corners'
+                    ? 'bg-primary text-on-primary shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                Corners ({cornerCount})
+              </button>
+              <button
+                onClick={() => setFilter('edges')}
+                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                  filter === 'edges'
+                    ? 'bg-primary text-on-primary shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                Edges ({edgeCount})
+              </button>
+              <button
+                onClick={() => setFilter('centers')}
+                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                  filter === 'centers'
+                    ? 'bg-primary text-on-primary shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                Centers ({centerCount})
+              </button>
+            </div>
           </div>
 
           {/* Context-Aware Actions for Current Tab */}
@@ -145,43 +205,80 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
           </div>
         </div>
 
-        {/* Tray Scrollable Content Area with Direct Drag-and-Drop */}
-        {isOpen && (
-          <div className="bg-surface-container-high/95 border border-outline-variant/40 shadow-2xl p-md max-h-48 overflow-x-auto overflow-y-hidden backdrop-blur-md">
-            {filteredPieces.length === 0 ? (
-              <div className="h-28 flex items-center justify-center text-on-surface-variant text-sm font-medium">
-                {trayPieces.length === 0
-                  ? 'All pieces are currently placed on the table!'
-                  : `No ${getTabLabel().toLowerCase()} pieces left in tray.`}
-              </div>
-            ) : (
-              <div className="flex gap-md items-center py-sm min-w-max">
-                {filteredPieces.map((piece) => (
-                  <div
-                    key={piece.id}
-                    onPointerDown={(e) => handlePointerDown(piece.id, e)}
-                    className="w-20 h-20 bg-surface-container rounded-xl border border-outline-variant/40 hover:border-primary hover:shadow-xl hover:scale-105 transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1 group flex-shrink-0 select-none touch-none"
-                    title={`Drag Piece #${piece.id + 1} onto table (${
-                      piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
-                    })`}
+        {/* Tray Scrollable Content Area with Smooth Slide-Down Animation */}
+        <div
+          className={`bg-surface-container-high/95 border border-outline-variant/40 shadow-2xl overflow-x-auto overflow-y-hidden backdrop-blur-md transition-all duration-300 ease-in-out ${
+            isOpen
+              ? 'max-h-56 opacity-100 p-md'
+              : 'max-h-0 opacity-0 p-0 border-t-0 pointer-events-none'
+          }`}
+        >
+          {filteredPieces.length === 0 ? (
+            <div className="h-28 flex items-center justify-center text-on-surface-variant text-sm font-medium">
+              {trayPieces.length === 0
+                ? 'All pieces are currently placed on the table!'
+                : `No ${getTabLabel().toLowerCase()} pieces left in tray.`}
+            </div>
+          ) : (
+            <div className="flex gap-md items-center py-xs min-w-max">
+              {filteredPieces.map((piece) => (
+                <div
+                  key={piece.id}
+                  onPointerDown={(e) => handlePointerDown(piece.id, e)}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onInspectPiece(piece)
+                  }}
+                  className="w-[84px] h-[84px] bg-surface-container-lowest/90 rounded-2xl border border-outline-variant/50 hover:border-primary hover:shadow-xl hover:-translate-y-1.5 transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none shadow-sm"
+                  title={`Piece #${piece.id + 1} (${
+                    piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
+                  }) • Click to pop • Drag to move • Right-click to inspect`}
+                >
+                  {/* Corner / Edge Badge Indicator */}
+                  {piece.isCorner ? (
+                    <span className="absolute top-1.5 left-1.5 px-1 py-0.2 bg-tertiary/20 text-tertiary text-[9px] font-bold rounded ring-1 ring-tertiary/30">
+                      Corner
+                    </span>
+                  ) : piece.isEdge ? (
+                    <span className="absolute top-1.5 left-1.5 px-1 py-0.2 bg-secondary/20 text-secondary text-[9px] font-bold rounded ring-1 ring-secondary/30">
+                      Edge
+                    </span>
+                  ) : null}
+
+                  {/* Hover Inspect Eye Button */}
+                  <button
+                    onPointerDown={(e) => {
+                      e.stopPropagation()
+                    }}
+                    onPointerUp={(e) => {
+                      e.stopPropagation()
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onInspectPiece(piece)
+                    }}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-surface-variant/90 hover:bg-primary hover:text-on-primary text-on-surface-variant flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-sm z-10"
+                    title="Inspect Piece Details"
                   >
-                    {piece.isCorner ? (
-                      <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-tertiary-container ring-1 ring-white" />
-                    ) : piece.isEdge ? (
-                      <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-secondary-container ring-1 ring-white" />
-                    ) : null}
-                    <span className="material-symbols-outlined text-3xl text-primary/80 group-hover:text-primary transition-colors">
-                      extension
-                    </span>
-                    <span className="text-[10px] font-semibold text-on-surface-variant group-hover:text-primary">
-                      #{piece.id + 1}
-                    </span>
+                    <span className="material-symbols-outlined text-[13px]">visibility</span>
+                  </button>
+
+                  {/* Piece Number Badge */}
+                  <span className="absolute bottom-1 right-1.5 text-[9px] font-semibold text-on-surface-variant/70 group-hover:text-primary">
+                    #{piece.id + 1}
+                  </span>
+
+                  {/* Real Piece Silhouette & Texture Thumbnail */}
+                  <div className="w-full h-full flex items-center justify-center p-1">
+                    <PieceThumbnail piece={piece} getPieceSprite={getPieceSprite} />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

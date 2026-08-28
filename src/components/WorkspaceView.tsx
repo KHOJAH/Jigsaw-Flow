@@ -6,6 +6,7 @@ import { audioEngine } from '../engine/AudioEngine'
 import { CanvasHUD } from './CanvasHUD'
 import { PieceTray, TrayFilter } from './PieceTray'
 import { SelectionHUD } from './SelectionHUD'
+import { PieceInspectModal } from './PieceInspectModal'
 
 interface WorkspaceViewProps {
   puzzle: PuzzleSave
@@ -33,6 +34,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [snapCount, setSnapCount] = useState<number>(puzzle.snapCount)
   const [isTrayOpen, setIsTrayOpen] = useState<boolean>(true) // Open by default for easy piece pickup
   const [isAutoSolving, setIsAutoSolving] = useState<boolean>(false)
+  const [inspectingPiece, setInspectingPiece] = useState<PuzzlePiece | null>(null)
 
   // Marquee Selection & Group Management State
   const [selectedPieceIds, setSelectedPieceIds] = useState<Set<number>>(new Set())
@@ -51,6 +53,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const activeClusterRef = useRef<number | null>(null)
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null)
   const dragOffsetsRef = useRef<Map<number, { relX: number; relY: number }>>(new Map())
+  const draggedFromTrayRef = useRef<{
+    pieceId: number
+    startClientX: number
+    startClientY: number
+    moved: boolean
+  } | null>(null)
   const isPanningRef = useRef<boolean>(false)
   const panStartRef = useRef<{ x: number; y: number } | null>(null)
   const isSpacePressedRef = useRef<boolean>(false)
@@ -271,6 +279,62 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   }
 
+  // Instantly pop piece from tray to an open, non-overlapping spot on the table
+  const handlePopPiece = useCallback(
+    (pieceId: number) => {
+      if (isAutoSolving) return
+      audioEngine.playPickup()
+
+      setPieces((prev) => {
+        const targetPiece = prev.find((p) => p.id === pieceId)
+        if (!targetPiece) return prev
+
+        const tablePieces = prev.filter((p) => !p.inTray)
+        const openSlot = ClusterManager.findNextOpenSlot(
+          tablePieces,
+          puzzle.boardWidth,
+          puzzle.boardHeight,
+          targetPiece.width,
+          targetPiece.height
+        )
+
+        highestZIndexRef.current += 10
+        const newZ = highestZIndexRef.current
+
+        const nextPieces = prev.map((p) =>
+          p.id === pieceId
+            ? {
+                ...p,
+                inTray: false,
+                x: openSlot.x,
+                y: openSlot.y,
+                zIndex: newZ,
+              }
+            : p
+        )
+
+        const groups = ClusterManager.getClusterGroups(nextPieces)
+        const largestClusterSize = Math.max(
+          ...Object.values(groups).map((g) => g.length),
+          1
+        )
+
+        onUpdatePuzzle({
+          ...puzzle,
+          pieces: nextPieces,
+          elapsedTime,
+          movesCount,
+          snapCount,
+          placedPieces: largestClusterSize,
+          updatedAt: new Date().toISOString(),
+        })
+
+        return nextPieces
+      })
+    },
+    [isAutoSolving, puzzle, elapsedTime, movesCount, snapCount, onUpdatePuzzle]
+  )
+
   // Seamless Direct Drag-and-Drop from Tray
   const handleStartDragFromTray = (pieceId: number, clientX: number, clientY: number) => {
     if (isAutoSolving || !canvasRef.current) return
@@ -281,6 +345,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
     const targetPiece = pieces.find((p) => p.id === pieceId)
     if (!targetPiece) return
+
+    draggedFromTrayRef.current = {
+      pieceId,
+      startClientX: clientX,
+      startClientY: clientY,
+      moved: true,
+    }
 
     setSelectedPieceIds(new Set())
     highestZIndexRef.current += 10
@@ -390,7 +461,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       }
     }
 
-    const handleGlobalMouseUp = () => {
+    const handleGlobalMouseUp = (e: MouseEvent) => {
       if (isPanningRef.current) {
         isPanningRef.current = false
         panStartRef.current = null
@@ -401,6 +472,25 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         if (selectedPieceIds.size > 0) {
           audioEngine.playPickup()
         }
+      }
+
+      // If dragged from tray and released back over the tray dock, return to tray
+      if (draggedFromTrayRef.current) {
+        const { pieceId } = draggedFromTrayRef.current
+        if (e.clientY > window.innerHeight - 130) {
+          setPieces((prev) =>
+            prev.map((p) =>
+              p.id === pieceId ? { ...p, inTray: true, x: 0, y: 0 } : p
+            )
+          )
+          audioEngine.playTrayToggle()
+          dragOffsetsRef.current.clear()
+          activeClusterRef.current = null
+          dragStartPosRef.current = null
+          draggedFromTrayRef.current = null
+          return
+        }
+        draggedFromTrayRef.current = null
       }
 
       if (dragOffsetsRef.current.size > 0) {
@@ -842,6 +932,20 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     )
   }
 
+  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const screenX = e.clientX - rect.left
+    const screenY = e.clientY - rect.top
+    const worldPos = screenToWorld(screenX, screenY)
+    const hitPiece = rendererRef.current.hitTest(pieces, worldPos.x, worldPos.y)
+    if (hitPiece) {
+      setInspectingPiece(hitPiece)
+      audioEngine.playPickup()
+    }
+  }
+
   const dsuProgress = ClusterManager.calculateProgress(pieces)
   const remainingCount = pieces.filter((p) => p.inTray || !p.isLockedToBoard).length
   const placedCount = pieces.length - remainingCount
@@ -885,6 +989,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
         onWheel={handleWheel}
         onDoubleClick={handleRotate}
         className={`w-full h-full block touch-none ${
@@ -896,13 +1001,47 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       <PieceTray
         pieces={pieces}
         isOpen={isTrayOpen}
+        getPieceSprite={(id) => rendererRef.current.getPieceSprite(id)}
         onToggleOpen={() => {
           setIsTrayOpen(!isTrayOpen)
           audioEngine.playTrayToggle()
         }}
+        onPopPiece={handlePopPiece}
+        onInspectPiece={(piece) => setInspectingPiece(piece)}
         onStartDragPiece={handleStartDragFromTray}
         onScatterTab={handleScatterTab}
         onTidyTab={handleTidyTab}
+      />
+
+      {/* Piece Inspection Pop-Up Card */}
+      <PieceInspectModal
+        piece={inspectingPiece ? pieces.find((p) => p.id === inspectingPiece.id) || null : null}
+        rotationEnabled={puzzle.rotationEnabled}
+        getPieceSprite={(id) => rendererRef.current.getPieceSprite(id)}
+        onClose={() => setInspectingPiece(null)}
+        onToggleTray={(pieceId) => {
+          const target = pieces.find((p) => p.id === pieceId)
+          if (target?.inTray) {
+            handlePopPiece(pieceId)
+          } else {
+            setPieces((prev) =>
+              prev.map((p) =>
+                p.id === pieceId
+                  ? { ...p, inTray: true, isLockedToBoard: false, x: 0, y: 0 }
+                  : p
+              )
+            )
+            audioEngine.playTrayToggle()
+          }
+        }}
+        onRotate={(pieceId) => {
+          audioEngine.playRotate()
+          setPieces((prev) =>
+            prev.map((p) =>
+              p.id === pieceId ? { ...p, rotation: (p.rotation + 90) % 360 } : p
+            )
+          )
+        }}
       />
     </div>
   )

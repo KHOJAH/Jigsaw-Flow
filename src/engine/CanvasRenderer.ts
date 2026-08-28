@@ -98,6 +98,13 @@ export class CanvasRenderer {
   }
 
   /**
+   * Retrieves the offscreen canvas sprite texture for a specific piece
+   */
+  public getPieceSprite(pieceId: number): PieceSprite | undefined {
+    return this.sprites.get(pieceId)
+  }
+
+  /**
    * Renders the complete 5-layer canvas architecture
    */
   public render(
@@ -224,24 +231,32 @@ export class CanvasRenderer {
 
         if (w > 2 || h > 2) {
           ctx.save()
-          ctx.fillStyle = 'rgba(29, 69, 51, 0.12)'
+          // 1. Uniform semi-transparent green tint
+          ctx.fillStyle = 'rgba(29, 69, 51, 0.14)'
           ctx.fillRect(x, y, w, h)
 
+          // 2. Crisp dashed boundary outline
           ctx.strokeStyle = '#1d4533'
           ctx.lineWidth = Math.max(1.0, 1.5 / viewport.scale)
           ctx.setLineDash([6 / viewport.scale, 4 / viewport.scale])
           ctx.strokeRect(x, y, w, h)
           ctx.setLineDash([])
 
-          // Corner accent dots
+          // 3. Corner accent dots (drawn individually with separate beginPath)
           const dotRadius = Math.max(2.5, 3.5 / viewport.scale)
           ctx.fillStyle = '#1d4533'
-          ctx.beginPath()
-          ctx.arc(x, y, dotRadius, 0, Math.PI * 2)
-          ctx.arc(x + w, y, dotRadius, 0, Math.PI * 2)
-          ctx.arc(x, y + h, dotRadius, 0, Math.PI * 2)
-          ctx.arc(x + w, y + h, dotRadius, 0, Math.PI * 2)
-          ctx.fill()
+          const corners = [
+            { cx: x, cy: y },
+            { cx: x + w, cy: y },
+            { cx: x, cy: y + h },
+            { cx: x + w, cy: y + h },
+          ]
+          for (const c of corners) {
+            ctx.beginPath()
+            ctx.arc(c.cx, c.cy, dotRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
+
           ctx.restore()
         }
       }
