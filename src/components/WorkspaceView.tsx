@@ -44,6 +44,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   // Dragging & Interaction refs
   const activeClusterRef = useRef<number | null>(null)
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null)
+  const dragOffsetsRef = useRef<Map<number, { relX: number; relY: number }>>(new Map())
   const isPanningRef = useRef<boolean>(false)
   const panStartRef = useRef<{ x: number; y: number } | null>(null)
   const isSpacePressedRef = useRef<boolean>(false)
@@ -74,7 +75,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setViewport({ x, y, scale })
   }, [puzzle.boardWidth, puzzle.boardHeight])
 
-  // Initialize Canvas Renderer Sprites
+  // Initialize Canvas Renderer Sprites once per puzzle
   useEffect(() => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -88,7 +89,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       centerBoard()
     }
     img.src = puzzle.imageSrc
-  }, [puzzle.imageSrc, puzzle.boardWidth, puzzle.boardHeight, puzzle.pieces, centerBoard])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzle.id, puzzle.imageSrc])
 
   // 60fps Animation render loop
   useEffect(() => {
@@ -165,6 +167,18 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         activeClusterRef.current = hitPiece.clusterId
         dragStartPosRef.current = worldPos
 
+        // Calculate and lock exact relative offset from click point to every piece in cluster
+        const offsets = new Map<number, { relX: number; relY: number }>()
+        for (const p of pieces) {
+          if (p.clusterId === hitPiece.clusterId) {
+            offsets.set(p.id, {
+              relX: p.x - worldPos.x,
+              relY: p.y - worldPos.y,
+            })
+          }
+        }
+        dragOffsetsRef.current = offsets
+
         highestZIndexRef.current += 10
         const newZ = highestZIndexRef.current
         setPieces((prev) =>
@@ -191,6 +205,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
     highestZIndexRef.current += 10
     const newZ = highestZIndexRef.current
+
+    // Center piece directly under cursor with strict offset lock
+    const offsets = new Map<number, { relX: number; relY: number }>()
+    offsets.set(targetPiece.id, {
+      relX: -targetPiece.width / 2,
+      relY: -targetPiece.height / 2,
+    })
+    dragOffsetsRef.current = offsets
 
     // Spawn piece under cursor in world coordinates and begin dragging
     setPieces((prev) =>
@@ -234,21 +256,25 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         return
       }
 
-      // Piece Dragging
-      if (activeClusterRef.current !== null && dragStartPosRef.current) {
+      // Piece Dragging (Strict 1-to-1 position tracking relative to cursor)
+      if (activeClusterRef.current !== null && dragOffsetsRef.current.size > 0) {
         const screenX = e.clientX - rect.left
         const screenY = e.clientY - rect.top
         const currentWorldPos = screenToWorld(screenX, screenY)
 
-        const dx = currentWorldPos.x - dragStartPosRef.current.x
-        const dy = currentWorldPos.y - dragStartPosRef.current.y
-        dragStartPosRef.current = currentWorldPos
-
-        setPieces((prev) => {
-          const next = [...prev]
-          ClusterManager.moveCluster(next, activeClusterRef.current!, dx, dy)
-          return next
-        })
+        setPieces((prev) =>
+          prev.map((p) => {
+            const offset = dragOffsetsRef.current.get(p.id)
+            if (offset) {
+              return {
+                ...p,
+                x: currentWorldPos.x + offset.relX,
+                y: currentWorldPos.y + offset.relY,
+              }
+            }
+            return p
+          })
+        )
       }
     }
 
@@ -305,6 +331,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           })
         }
 
+        dragOffsetsRef.current.clear()
         activeClusterRef.current = null
         dragStartPosRef.current = null
       }
@@ -331,11 +358,21 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     screenToWorld,
   ])
 
-  // Handle Mouse Wheel Zoom (Anchored precisely to cursor position)
+  // Handle Mouse Wheel: Zoom anchored to cursor, or Shift+Scroll to Pan Horizontally (Left/Right)
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault()
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect) return
+
+    // Shift + Scroll: Pan left / right
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      const panDelta = e.shiftKey ? (e.deltaY || e.deltaX) : e.deltaX
+      setViewport((prev) => ({
+        ...prev,
+        x: prev.x - panDelta * 1.2,
+      }))
+      return
+    }
 
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
