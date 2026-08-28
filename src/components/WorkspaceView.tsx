@@ -885,11 +885,36 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     if (!candidate) return
 
     // If piece is in tray, ensure tray is expanded so player can see it
-    if (candidate.inTray && !isTrayOpen) {
-      setIsTrayOpen(true)
+    if (candidate.inTray) {
+      if (!isTrayOpen) setIsTrayOpen(true)
+    } else {
+      // Outside tray (loose on table): highlight it and ensure it's framed in view!
+      setSelectedPieceIds(new Set([candidate.id]))
+
+      if (canvasRef.current) {
+        const { clientWidth, clientHeight } = canvasRef.current
+        const screenPieceX = candidate.x * viewport.scale + viewport.x
+        const screenPieceY = candidate.y * viewport.scale + viewport.y
+        const isOffscreen =
+          screenPieceX < 80 ||
+          screenPieceX > clientWidth - 80 ||
+          screenPieceY < 80 ||
+          screenPieceY > clientHeight - 80
+
+        if (isOffscreen) {
+          const midX = (candidate.x + candidate.targetX) / 2
+          const midY = (candidate.y + candidate.targetY) / 2
+          setViewport((prev) => ({
+            ...prev,
+            x: clientWidth / 2 - midX * prev.scale,
+            y: clientHeight / 2 - midY * prev.scale,
+          }))
+        }
+      }
     }
 
     setHintedPiece(candidate)
+    wakeRenderLoop(5500)
     audioEngine.playHint()
 
     if (hintTimerRef.current) {
@@ -898,7 +923,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     hintTimerRef.current = setTimeout(() => {
       setHintedPiece(null)
     }, 5000)
-  }, [isAutoSolving, selectedPieceIds, pieces, isTrayOpen])
+  }, [isAutoSolving, selectedPieceIds, pieces, isTrayOpen, viewport, wakeRenderLoop])
 
   // Keyboard Shortcuts Listener
   useEffect(() => {
@@ -926,6 +951,44 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         }
       }
       if (e.code === 'Escape') {
+        // If holding/dragging pieces or group selected, return them directly to tray
+        const heldClusterId = activeClusterRef.current
+        const draggedPieceId = draggedFromTrayRef.current?.pieceId
+        const hasDragOffsets = dragOffsetsRef.current.size > 0
+        const hasSelected = selectedPieceIds.size > 0
+
+        if (heldClusterId !== null || draggedPieceId !== undefined || hasDragOffsets || hasSelected) {
+          const returnedIds = new Set<number>()
+          if (heldClusterId !== null) {
+            pieces
+              .filter((p) => p.clusterId === heldClusterId && !p.isLockedToBoard)
+              .forEach((p) => returnedIds.add(p.id))
+          }
+          if (draggedPieceId !== undefined) {
+            returnedIds.add(draggedPieceId)
+          }
+          if (hasDragOffsets) {
+            dragOffsetsRef.current.forEach((_, id) => returnedIds.add(id))
+          }
+          if (hasSelected) {
+            selectedPieceIds.forEach((id) => returnedIds.add(id))
+          }
+
+          if (returnedIds.size > 0) {
+            setPieces((prev) =>
+              prev.map((p) => (returnedIds.has(p.id) ? { ...p, inTray: true } : p))
+            )
+            audioEngine.playTrayToggle()
+          }
+        }
+
+        // Reset all drag state
+        activeClusterRef.current = null
+        dragOffsetsRef.current.clear()
+        dragStartPosRef.current = null
+        draggedFromTrayRef.current = null
+        isDraggingGroupRef.current = false
+        marqueeBoxRef.current = null
         setSelectedPieceIds(new Set())
         setHintedPiece(null)
       }

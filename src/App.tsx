@@ -402,7 +402,7 @@ export const App: React.FC = () => {
           {activeTab === 'workspace' && (
             activePuzzle ? (
               <WorkspaceView
-                key={activePuzzle.id}
+                key={`${activePuzzle.id}-${activePuzzle.updatedAt}`}
                 puzzle={activePuzzle}
                 settings={settings}
                 onUpdatePuzzle={handleUpdatePuzzle}

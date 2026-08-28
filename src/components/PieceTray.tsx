@@ -93,6 +93,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   isSidebarCollapsed = false,
 }) => {
   const [filter, setFilter] = useState<TrayFilter>('all')
+  const [trayRows, setTrayRows] = useState<1 | 2 | 3>(1)
 
   // Auto-scroll to hinted piece inside tray
   useEffect(() => {
@@ -108,10 +109,16 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   const centerCount = trayPieces.filter((p) => !p.isEdge).length
 
   const filteredPieces = trayPieces.filter((p) => {
-    if (filter === 'corners') return p.isCorner
-    if (filter === 'edges') return p.isEdge && !p.isCorner
-    if (filter === 'centers') return !p.isEdge
-    return true
+    switch (filter) {
+      case 'corners':
+        return p.isCorner
+      case 'edges':
+        return p.isEdge && !p.isCorner
+      case 'centers':
+        return !p.isEdge
+      default:
+        return true
+    }
   })
 
   const getTabLabel = () => {
@@ -208,8 +215,45 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
             </div>
           </div>
 
-          {/* Quick Tray Sorting Actions */}
+          {/* Quick Tray Sorting Actions & Row Density Selector */}
           <div className="flex items-center gap-xs">
+            {/* Row Density Selector */}
+            <div className="hidden sm:flex items-center bg-surface-variant/80 dark:bg-black/30 rounded-xl p-0.5 text-[11px] font-bold border border-outline-variant/40 dark:border-transparent mr-1">
+              <button
+                onClick={() => setTrayRows(1)}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  trayRows === 1
+                    ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+                title="1-Row Compact Tray"
+              >
+                1R
+              </button>
+              <button
+                onClick={() => setTrayRows(2)}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  trayRows === 2
+                    ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+                title="2-Row Standard Tray"
+              >
+                2R
+              </button>
+              <button
+                onClick={() => setTrayRows(3)}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  trayRows === 3
+                    ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+                title="3-Row Spacious Tray"
+              >
+                3R
+              </button>
+            </div>
+
             <button
               onClick={() => onScatterTab(filter)}
               className="px-sm py-1.5 text-xs font-semibold rounded-xl bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/50 dark:bg-white/5 dark:hover:bg-white/10 dark:border-transparent shadow-xs hover:shadow transition-all flex items-center gap-1 cursor-pointer active:scale-95"
@@ -233,20 +277,38 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
         <div
           className={`bg-surface-container-high/98 border-x border-b border-outline-variant/60 dark:border-transparent shadow-[0_-20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_-24px_60px_rgba(0,0,0,0.7)] overflow-x-auto overflow-y-hidden backdrop-blur-xl transition-all duration-300 ease-in-out ${
             isOpen
-              ? 'max-h-60 opacity-100 p-md'
+              ? trayRows === 1
+                ? 'max-h-36 opacity-100 p-sm'
+                : trayRows === 2
+                ? 'max-h-64 opacity-100 p-sm'
+                : 'max-h-96 opacity-100 p-sm'
               : 'max-h-0 opacity-0 p-0 border-t-0 pointer-events-none'
           }`}
         >
           {filteredPieces.length === 0 ? (
-            <div className="h-28 flex items-center justify-center text-on-surface-variant text-sm font-medium">
+            <div className="h-24 flex items-center justify-center text-on-surface-variant text-sm font-medium">
               {trayPieces.length === 0
                 ? 'All pieces are currently placed on the table!'
                 : `No ${getTabLabel().toLowerCase()} pieces left in tray.`}
             </div>
           ) : (
-            <div className="flex gap-md items-center py-xs min-w-max">
+            <div
+              className={`grid ${
+                trayRows === 1
+                  ? 'grid-rows-1 gap-md'
+                  : trayRows === 2
+                  ? 'grid-rows-2 gap-sm'
+                  : 'grid-rows-3 gap-xs'
+              } grid-flow-col items-center py-xs min-w-max`}
+            >
               {filteredPieces.map((piece) => {
                 const isHinted = piece.id === hintedPieceId
+                const cardDimClass =
+                  trayRows === 1
+                    ? 'w-[96px] h-[96px]'
+                    : trayRows === 2
+                    ? 'w-[80px] h-[80px]'
+                    : 'w-[68px] h-[68px]'
                 return (
                   <div
                     key={piece.id}
@@ -257,7 +319,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                       e.stopPropagation()
                       onInspectPiece(piece)
                     }}
-                    className={`w-[96px] h-[96px] rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none ${
+                    className={`${cardDimClass} rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none ${
                       isHinted
                         ? 'border-primary ring-4 ring-primary/80 bg-primary-container/40 shadow-2xl scale-110 animate-pulse z-20'
                         : 'bg-surface-container-lowest border-outline-variant/60 hover:border-primary shadow-md hover:shadow-2xl hover:-translate-y-2 hover:scale-105 dark:bg-[#151921] dark:border-transparent dark:hover:border-emerald-500/50 dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]'

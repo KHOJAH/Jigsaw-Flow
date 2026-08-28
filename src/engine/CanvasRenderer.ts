@@ -426,6 +426,144 @@ export class CanvasRenderer {
     }
   }
 
+  private surfacePatterns: Map<string, CanvasPattern | null> = new Map()
+
+  /**
+   * Generates and caches high-performance procedural textures for table surfaces
+   */
+  private getTablePattern(
+    ctx: CanvasRenderingContext2D,
+    surface: TableSurface,
+    isDark: boolean
+  ): CanvasPattern | null {
+    const key = `${surface}-${isDark ? 'dark' : 'light'}`
+    if (this.surfacePatterns.has(key)) {
+      return this.surfacePatterns.get(key) || null
+    }
+
+    const patCanvas = document.createElement('canvas')
+    const patCtx = patCanvas.getContext('2d')
+    if (!patCtx) return null
+
+    switch (surface) {
+      case 'felt': {
+        // Soft woven acoustic felt texture
+        patCanvas.width = 120
+        patCanvas.height = 120
+        const baseColor = isDark ? '#14171d' : '#f5e8de'
+        patCtx.fillStyle = baseColor
+        patCtx.fillRect(0, 0, 120, 120)
+
+        // Micro-fiber flecks
+        const fiberCount = 600
+        for (let i = 0; i < fiberCount; i++) {
+          const fx = Math.random() * 120
+          const fy = Math.random() * 120
+          const len = 1.5 + Math.random() * 3.5
+          const angle = Math.random() * Math.PI
+          const alpha = 0.03 + Math.random() * 0.05
+          patCtx.strokeStyle = isDark
+            ? `rgba(255, 255, 255, ${alpha})`
+            : `rgba(40, 25, 15, ${alpha})`
+          patCtx.lineWidth = 0.6 + Math.random() * 0.5
+          patCtx.beginPath()
+          patCtx.moveTo(fx, fy)
+          patCtx.lineTo(fx + Math.cos(angle) * len, fy + Math.sin(angle) * len)
+          patCtx.stroke()
+        }
+        break
+      }
+
+      case 'walnut': {
+        // Natural satin dark walnut woodgrain
+        patCanvas.width = 240
+        patCanvas.height = 240
+        patCtx.fillStyle = isDark ? '#161310' : '#30261f'
+        patCtx.fillRect(0, 0, 240, 240)
+
+        // Subtle undulating organic grain lines
+        for (let y = 0; y < 240; y += 4) {
+          const wave = Math.sin(y / 15) * 8 + Math.cos(y / 7) * 4
+          const alpha = 0.03 + Math.random() * 0.04
+          patCtx.strokeStyle = isDark
+            ? `rgba(215, 175, 135, ${alpha})`
+            : `rgba(20, 12, 6, ${alpha * 1.5})`
+          patCtx.lineWidth = 1.2 + Math.random() * 1.8
+          patCtx.beginPath()
+          patCtx.moveTo(0, y + wave)
+          patCtx.bezierCurveTo(80, y + wave + 3, 160, y + wave - 3, 240, y + wave)
+          patCtx.stroke()
+        }
+        break
+      }
+
+      case 'cutting-mat': {
+        // Precision self-healing drafting grid
+        patCanvas.width = 100
+        patCanvas.height = 100
+        patCtx.fillStyle = isDark ? '#0a1610' : '#122c20'
+        patCtx.fillRect(0, 0, 100, 100)
+
+        // 10px Sub-grid lines
+        patCtx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.025)' : 'rgba(255, 255, 255, 0.04)'
+        patCtx.lineWidth = 0.75
+        patCtx.beginPath()
+        for (let i = 10; i < 100; i += 10) {
+          if (i === 50) continue
+          patCtx.moveTo(i, 0)
+          patCtx.lineTo(i, 100)
+          patCtx.moveTo(0, i)
+          patCtx.lineTo(100, i)
+        }
+        patCtx.stroke()
+
+        // 50px Major grid lines
+        patCtx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(255, 255, 255, 0.10)'
+        patCtx.lineWidth = 1.2
+        patCtx.beginPath()
+        patCtx.moveTo(50, 0); patCtx.lineTo(50, 100)
+        patCtx.moveTo(0, 50); patCtx.lineTo(100, 50)
+        patCtx.stroke()
+
+        // 45-degree diagonal drafting tick
+        patCtx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.06)'
+        patCtx.setLineDash([3, 5])
+        patCtx.beginPath()
+        patCtx.moveTo(0, 0); patCtx.lineTo(100, 100)
+        patCtx.stroke()
+        patCtx.setLineDash([])
+        break
+      }
+
+      case 'slate': {
+        // Fine volcanic obsidian stone texture
+        patCanvas.width = 150
+        patCanvas.height = 150
+        patCtx.fillStyle = isDark ? '#121419' : '#22252a'
+        patCtx.fillRect(0, 0, 150, 150)
+
+        // Mineral crystals & granular flecks
+        for (let i = 0; i < 700; i++) {
+          const sx = Math.random() * 150
+          const sy = Math.random() * 150
+          const rad = 0.5 + Math.random() * 1.2
+          const alpha = 0.02 + Math.random() * 0.05
+          patCtx.fillStyle = isDark
+            ? `rgba(200, 215, 240, ${alpha})`
+            : `rgba(255, 255, 255, ${alpha})`
+          patCtx.beginPath()
+          patCtx.arc(sx, sy, rad, 0, Math.PI * 2)
+          patCtx.fill()
+        }
+        break
+      }
+    }
+
+    const pattern = ctx.createPattern(patCanvas, 'repeat')
+    this.surfacePatterns.set(key, pattern)
+    return pattern
+  }
+
   /**
    * Renders the table surface background
    */
@@ -436,37 +574,14 @@ export class CanvasRenderer {
     surface: TableSurface
   ): void {
     const isDark = document.documentElement.classList.contains('dark')
+    const pattern = this.getTablePattern(ctx, surface, isDark)
 
-    switch (surface) {
-      case 'felt':
-        ctx.fillStyle = isDark ? '#13161a' : '#f7eae0' // Soft Deep Studio Charcoal Felt or Soft Linen Cream
-        ctx.fillRect(0, 0, width, height)
-        break
-      case 'walnut':
-        ctx.fillStyle = isDark ? '#181512' : '#362f29' // Deep Walnut
-        ctx.fillRect(0, 0, width, height)
-        break
-      case 'cutting-mat':
-        ctx.fillStyle = isDark ? '#0c1a14' : '#143124' // Dark Green Mat
-        ctx.fillRect(0, 0, width, height)
-        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.07)'
-        ctx.lineWidth = 1
-        const step = 40
-        ctx.beginPath()
-        for (let x = 0; x < width; x += step) {
-          ctx.moveTo(x, 0)
-          ctx.lineTo(x, height)
-        }
-        for (let y = 0; y < height; y += step) {
-          ctx.moveTo(0, y)
-          ctx.lineTo(width, y)
-        }
-        ctx.stroke()
-        break
-      case 'slate':
-        ctx.fillStyle = isDark ? '#16191f' : '#26292b' // Obsidian Slate
-        ctx.fillRect(0, 0, width, height)
-        break
+    if (pattern) {
+      ctx.fillStyle = pattern
+      ctx.fillRect(0, 0, width, height)
+    } else {
+      ctx.fillStyle = isDark ? '#12151a' : '#f7eae0'
+      ctx.fillRect(0, 0, width, height)
     }
   }
 

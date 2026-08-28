@@ -29,6 +29,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const [inspectImage, setInspectImage] = useState<PuzzleSave | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -64,17 +66,88 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     return `${mins}m ${secs}s`
   }
 
+  // Filtered lists based on search and category
+  const q = searchQuery.toLowerCase().trim()
+
+  const filteredRecentSaves = recentSaves.filter((s) => {
+    if (categoryFilter !== 'all' && categoryFilter !== 'in-progress') return false
+    if (!q) return true
+    return s.title.toLowerCase().includes(q)
+  })
+
+  const filteredCompletedSaves = completedSaves.filter((s) => {
+    if (categoryFilter !== 'all' && categoryFilter !== 'completed') return false
+    if (!q) return true
+    return s.title.toLowerCase().includes(q)
+  })
+
+  const filteredSamples = SAMPLE_PUZZLES.filter((s) => {
+    if (categoryFilter !== 'all' && categoryFilter.toLowerCase() !== s.category.toLowerCase()) return false
+    if (!q) return true
+    return s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)
+  })
+
   return (
     <div className="flex-1 overflow-y-auto p-lg md:p-xl bg-background text-on-background">
-      <div className="max-w-6xl mx-auto space-y-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-md">
+      <div className="max-w-6xl mx-auto space-y-lg">
+        {/* Header & Search Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-md">
           <div className="flex flex-col gap-xs">
             <h1 className="font-display-lg text-display-lg text-primary font-bold">Library</h1>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
               Create custom jigsaw puzzles from your images and manage your collection.
             </p>
           </div>
+
+          {/* Search Input Box */}
+          <div className="relative min-w-[280px] md:min-w-[340px]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg pointer-events-none">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder="Search puzzles & categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-surface-container pl-10 pr-9 py-2 rounded-2xl border border-outline-variant/40 dark:border-transparent text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center hover:text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xs">close</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Pills Filter Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-semibold select-none">
+          {['all', 'in-progress', 'completed', 'Nature', 'Ocean', 'Forest', 'Mechanical'].map((cat) => {
+            const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase()
+            const label =
+              cat === 'all'
+                ? 'All Puzzles'
+                : cat === 'in-progress'
+                ? `In Progress (${recentSaves.length})`
+                : cat === 'completed'
+                ? `Completed (${completedSaves.length})`
+                : cat
+            return (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                  isSelected
+                    ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs font-bold ring-1 ring-primary/30'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Bento Grid Layout */}
@@ -185,13 +258,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
 
         {/* Recent In-Progress Saves */}
-        {recentSaves.length > 0 && (
+        {filteredRecentSaves.length > 0 && (
           <section>
             <div className="flex justify-between items-end mb-md">
-              <h2 className="font-headline-lg text-headline-lg text-primary">In-Progress Saves</h2>
+              <h2 className="font-headline-lg text-headline-lg text-primary font-bold">In-Progress Saves</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
-              {recentSaves.map((save) => {
+              {filteredRecentSaves.map((save) => {
                 const progressPct = Math.round((save.placedPieces / save.totalPieces) * 100)
                 return (
                   <div
@@ -247,52 +320,79 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         )}
 
         {/* Curated Starter Collection */}
-        <section>
-          <div className="flex justify-between items-end mb-md">
-            <h2 className="font-headline-lg text-headline-lg text-primary font-bold">Curated Masterpieces</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-md">
-            {SAMPLE_PUZZLES.map((sample) => (
-              <div
-                key={sample.id}
-                onClick={() => onSelectImage(sample.imageSrc, sample.title, sample.pieceCount)}
-                className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
-              >
-                <div className="relative h-44 overflow-hidden bg-surface-variant">
-                  <img
-                    alt={sample.title}
-                    src={sample.imageSrc}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-sm right-sm bg-primary-container text-on-primary-container font-label-sm text-label-sm px-sm py-xs rounded-full shadow-sm">
-                    {sample.category}
+        {filteredSamples.length > 0 && (
+          <section>
+            <div className="flex justify-between items-end mb-md">
+              <h2 className="font-headline-lg text-headline-lg text-primary font-bold">Curated Masterpieces</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-md">
+              {filteredSamples.map((sample) => (
+                <div
+                  key={sample.id}
+                  onClick={() => onSelectImage(sample.imageSrc, sample.title, sample.pieceCount)}
+                  className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
+                >
+                  <div className="relative h-44 overflow-hidden bg-surface-variant">
+                    <img
+                      alt={sample.title}
+                      src={sample.imageSrc}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-sm right-sm bg-primary-container text-on-primary-container font-label-sm text-label-sm px-sm py-xs rounded-full shadow-sm">
+                      {sample.category}
+                    </div>
+                  </div>
+                  <div className="p-md flex flex-col flex-1 justify-between">
+                    <div>
+                      <h4 className="font-body-lg text-body-lg text-on-surface font-semibold mb-xs truncate">
+                        {sample.title}
+                      </h4>
+                      <p className="text-xs text-on-surface-variant line-clamp-2 mb-sm">
+                        {sample.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-sm pt-sm border-t border-outline-variant/20 dark:border-transparent">
+                      <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
+                        {sample.pieceCount} Pieces
+                      </span>
+                      <span className="font-label-sm text-label-sm text-primary font-semibold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                        <span>Play</span>
+                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="p-md flex flex-col flex-1 justify-between">
-                  <div>
-                    <h4 className="font-body-lg text-body-lg text-on-surface font-semibold mb-xs truncate">
-                      {sample.title}
-                    </h4>
-                    <p className="text-xs text-on-surface-variant line-clamp-2 mb-sm">
-                      {sample.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mt-sm pt-sm border-t border-outline-variant/20 dark:border-transparent">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">
-                      Default: {sample.pieceCount} pcs
-                    </span>
-                    <button className="text-primary font-semibold text-xs group-hover:underline flex items-center gap-0.5">
-                      Play Now <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Search & Category No Results Fallback */}
+        {filteredRecentSaves.length === 0 && filteredSamples.length === 0 && filteredCompletedSaves.length === 0 && (
+          <div className="py-16 flex flex-col items-center justify-center text-center bg-surface-container rounded-2xl border border-outline-variant/20">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">
+              search_off
+            </span>
+            <h3 className="font-headline-md text-lg font-bold text-primary mb-1">
+              No matching puzzles found
+            </h3>
+            <p className="text-xs text-on-surface-variant max-w-sm mb-4">
+              Try adjusting your search query or switching the category filter.
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setCategoryFilter('all')
+              }}
+              className="px-4 py-1.5 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:bg-primary-container transition-all cursor-pointer"
+            >
+              Reset Filters
+            </button>
           </div>
-        </section>
+        )}
 
         {/* Completed Gallery */}
-        {completedSaves.length > 0 && (
+        {filteredCompletedSaves.length > 0 && (
           <section>
             <div className="flex justify-between items-end mb-md">
               <h2 className="font-headline-lg text-headline-lg text-primary font-bold">Completed Gallery</h2>
