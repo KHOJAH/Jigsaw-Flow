@@ -9,6 +9,7 @@ interface SidebarProps {
   completedCount: number
   theme?: string
   onToggleTheme?: () => void
+  isCollapsed?: boolean
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -17,23 +18,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenImport,
   hasActivePuzzle,
   completedCount,
-  theme,
-  onToggleTheme,
+  isCollapsed = false,
 }) => {
   return (
-    <nav className="hidden md:flex flex-col p-md space-y-sm h-full w-sidebar-width bg-surface-container shadow-md border-r border-outline-variant/30 dark:border-transparent z-20 flex-shrink-0">
-      {/* Brand Heading */}
-      <div className="flex items-center gap-sm mb-lg px-xs">
-        <span
-          className="material-symbols-outlined text-[32px] text-primary"
-          style={{ fontVariationSettings: "'FILL' 1" }}
-        >
-          extension
-        </span>
-        <span className="font-headline-md text-headline-md text-primary font-bold">
-          Jigsaw Flow
-        </span>
-      </div>
+    <aside
+      className={`hidden md:block h-full bg-surface-container z-20 flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden select-none ${
+        isCollapsed
+          ? 'w-0 opacity-0 pointer-events-none border-r-0'
+          : 'w-sidebar-width opacity-100 shadow-md border-r border-outline-variant/30 dark:border-transparent'
+      }`}
+    >
+      <div className="w-sidebar-width h-full p-md space-y-sm flex flex-col flex-shrink-0">
+        {/* Brand Heading */}
+        <div className="flex items-center gap-sm mb-lg px-xs">
+          <span
+            className="material-symbols-outlined text-[32px] text-primary"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            extension
+          </span>
+          <span className="font-headline-md text-headline-md text-primary font-bold">
+            Jigsaw Flow
+          </span>
+        </div>
 
       {/* User Profile Card */}
       <div className="flex items-center gap-md p-sm mb-lg bg-surface-variant rounded-lg border border-outline-variant/20 dark:border-transparent">
@@ -127,14 +134,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Import CTA Button */}
-      <button
-        onClick={onOpenImport}
-        className="mt-md w-full bg-primary text-on-primary dark:bg-emerald-600 dark:hover:bg-emerald-500 py-sm px-md rounded-lg font-label-md text-label-md hover:bg-primary-container transition-all active:scale-[0.98] shadow-sm flex justify-center items-center gap-xs cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-[18px]">add</span>
-        Import New Puzzle
-      </button>
-    </nav>
+        {/* Import CTA Button */}
+        <button
+          onClick={onOpenImport}
+          className="mt-md w-full bg-primary text-on-primary dark:bg-emerald-600 dark:hover:bg-emerald-500 py-sm px-md rounded-lg font-label-md text-label-md hover:bg-primary-container transition-all active:scale-[0.98] shadow-sm flex justify-center items-center gap-xs cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Import New Puzzle
+        </button>
+      </div>
+    </aside>
   )
 }

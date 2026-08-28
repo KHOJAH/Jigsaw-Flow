@@ -15,6 +15,8 @@ interface WorkspaceViewProps {
   onUpdateSettings: (newSettings: Partial<UserSettings>) => void
   onVictory: (finalStats: { solveTime: number; moves: number; accuracy: number }) => void
   onBackToLibrary: () => void
+  isSidebarCollapsed?: boolean
+  onToggleSidebar?: () => void
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
@@ -24,6 +26,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   onUpdateSettings,
   onVictory,
   onBackToLibrary,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const rendererRef = useRef<CanvasRenderer>(new CanvasRenderer())
@@ -1091,6 +1095,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         onAutoComplete={handleAutoComplete}
         onLocateBoardRegion={handleLocateBoardRegion}
         onHint={handleTriggerHint}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={onToggleSidebar}
       />
 
       {/* Floating Multi-Selection Actions Pill */}
@@ -1130,6 +1136,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         onStartDragPiece={handleStartDragFromTray}
         onScatterTab={handleScatterTab}
         onTidyTab={handleTidyTab}
+        isSidebarCollapsed={isSidebarCollapsed}
       />
 
       {/* Piece Inspection Pop-Up Card */}

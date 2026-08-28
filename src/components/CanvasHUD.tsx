@@ -18,6 +18,8 @@ interface CanvasHUDProps {
   onAutoComplete?: () => void
   onLocateBoardRegion?: (normX: number, normY: number) => void
   onHint?: () => void
+  isSidebarCollapsed?: boolean
+  onToggleSidebar?: () => void
 }
 
 export const CanvasHUD: React.FC<CanvasHUDProps> = ({
@@ -37,6 +39,8 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
   onAutoComplete,
   onLocateBoardRegion,
   onHint,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
 }) => {
   const [showReferenceCard, setShowReferenceCard] = useState(false)
   const [showGhostSlider, setShowGhostSlider] = useState(false)
@@ -66,8 +70,8 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
     <>
       {/* Top Floating Header & Status Bar */}
       <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none select-none">
-        {/* Left: Back to Library & Title */}
-        <div className="flex items-center gap-sm pointer-events-auto bg-surface-container/90 backdrop-blur-md px-md py-sm rounded-xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
+        {/* Left: Back to Library, Toggle Sidebar & Title */}
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-surface-container/90 backdrop-blur-md px-3 py-2 rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
           <button
             onClick={onSaveAndExit}
             className="w-8 h-8 rounded-lg hover:bg-surface-variant flex items-center justify-center text-primary transition-colors cursor-pointer"
@@ -75,18 +79,33 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
           >
             <span className="material-symbols-outlined text-lg">arrow_back</span>
           </button>
-          <div>
-            <h3 className="font-headline-md text-sm font-bold text-primary truncate max-w-[160px] md:max-w-xs">
+
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="w-8 h-8 rounded-lg hover:bg-surface-variant flex items-center justify-center text-primary transition-colors cursor-pointer"
+              title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            >
+              <span className="material-symbols-outlined text-lg">
+                {isSidebarCollapsed ? 'dock_to_right' : 'dock_to_left'}
+              </span>
+            </button>
+          )}
+
+          <div className="h-5 w-px bg-outline-variant/40 dark:bg-white/10 mx-0.5" />
+
+          <div className="flex flex-col justify-center px-1">
+            <h3 className="font-headline-md text-sm font-bold text-primary truncate max-w-[160px] md:max-w-xs leading-tight">
               {title}
             </h3>
-            <div className="text-[11px] text-on-surface-variant font-medium">
+            <div className="text-[11px] text-on-surface-variant font-medium leading-tight mt-0.5">
               {totalPieces} Pieces
             </div>
           </div>
         </div>
 
-        {/* Center: Live Timer & DSU Progress Badge */}
-        <div className="hidden sm:flex items-center gap-md pointer-events-auto bg-surface-container/90 backdrop-blur-md px-lg py-sm rounded-xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
+        {/* Center: Live Timer & DSU Progress Badge (Permanently Centered) */}
+        <div className="hidden sm:flex items-center gap-md pointer-events-auto bg-surface-container/90 backdrop-blur-md px-lg py-2 rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl absolute left-1/2 -translate-x-1/2 transition-all duration-300">
           <div className="flex items-center gap-1.5 text-primary font-bold text-sm">
             <span className="material-symbols-outlined text-base">timer</span>
             <span className="font-mono text-sm tracking-wider">{formatTimer(elapsedTime)}</span>
@@ -98,19 +117,19 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
             <span className="text-xs font-semibold text-on-surface-variant">
               {placedPieces} / {totalPieces}
             </span>
-            <span className="bg-primary-container text-on-primary-container text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm">
+            <span className="bg-emerald-600 text-white dark:bg-emerald-500/20 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-500/30 text-xs px-2.5 py-0.5 rounded-full font-bold shadow-xs">
               {progressPct}%
             </span>
           </div>
         </div>
 
         {/* Right: Utility Tool Controls */}
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-surface-container/90 backdrop-blur-md p-1 rounded-xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-surface-container/90 backdrop-blur-md p-1.5 rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl ml-auto">
           {/* Auto Complete Action Button */}
           {settings.allowAutoComplete && onAutoComplete && (
             <button
               onClick={onAutoComplete}
-              className="px-sm py-1.5 bg-primary-container text-on-primary-container hover:bg-primary-container/80 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer active:scale-95 mr-1"
+              className="px-sm py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 dark:ring-1 dark:ring-emerald-500/30 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer active:scale-95 mr-1"
               title="Automatically Solve and Assemble Puzzle"
             >
               <span className="material-symbols-outlined text-base">auto_awesome</span>
@@ -179,20 +198,6 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="material-symbols-outlined text-lg">lightbulb</span>
             </button>
           )}
-
-          {/* Theme Quick Toggle Button */}
-          <button
-            onClick={() => {
-              const next = settings.theme === 'dark' ? 'light' : 'dark'
-              onUpdateSettings({ theme: next })
-            }}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-all cursor-pointer active:scale-95"
-            title={settings.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            <span className="material-symbols-outlined text-lg text-primary">
-              {settings.theme === 'dark' ? 'light_mode' : 'dark_mode'}
-            </span>
-          </button>
 
           {/* Zoom Controls */}
           <div className="h-5 w-px bg-outline-variant/40 mx-0.5" />

@@ -46,6 +46,7 @@ interface PieceTrayProps {
   onStartDragPiece: (pieceId: number, screenX: number, screenY: number) => void
   onScatterTab: (tab: TrayFilter) => void
   onTidyTab: (tab: TrayFilter) => void
+  isSidebarCollapsed?: boolean
 }
 
 export const PieceTray: React.FC<PieceTrayProps> = ({
@@ -59,6 +60,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   onStartDragPiece,
   onScatterTab,
   onTidyTab,
+  isSidebarCollapsed = false,
 }) => {
   const [filter, setFilter] = useState<TrayFilter>('all')
 
@@ -104,8 +106,16 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 select-none">
-      <div className="max-w-5xl mx-auto px-md">
+    <div
+      className={`fixed bottom-0 ${
+        isSidebarCollapsed ? 'left-0' : 'left-0 md:left-sidebar-width'
+      } right-0 z-30 select-none transition-all duration-300 ease-in-out`}
+    >
+      <div
+        className={`${
+          isSidebarCollapsed ? 'max-w-6xl xl:max-w-7xl' : 'max-w-4xl lg:max-w-5xl'
+        } mx-auto px-md transition-all duration-300 ease-in-out`}
+      >
         {/* Tray Toggle Tab & Toolbar */}
         <div className="bg-surface-container/95 border-t border-x border-outline-variant/60 dark:border-transparent rounded-t-3xl shadow-[0_-12px_36px_rgba(0,0,0,0.14)] dark:shadow-[0_-16px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl px-md py-sm flex items-center justify-between transition-colors">
           <div className="flex items-center gap-sm">

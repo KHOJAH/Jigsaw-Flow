@@ -37,7 +37,8 @@ export const App: React.FC = () => {
     return loaded
   })
 
-  // Modals state
+  // Modals & layout state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [importImageSrc, setImportImageSrc] = useState<string>('')
   const [importInitialTitle, setImportInitialTitle] = useState<string>('Custom Jigsaw')
@@ -378,6 +379,7 @@ export const App: React.FC = () => {
           completedCount={completedSaves.length}
           theme={settings.theme}
           onToggleTheme={handleToggleTheme}
+          isCollapsed={isSidebarCollapsed && activeTab === 'workspace'}
         />
 
         {/* View Switcher */}
@@ -406,6 +408,8 @@ export const App: React.FC = () => {
                 onUpdatePuzzle={handleUpdatePuzzle}
                 onUpdateSettings={handleUpdateSettings}
                 onVictory={handleVictory}
+                isSidebarCollapsed={isSidebarCollapsed}
+                onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
                 onBackToLibrary={() => {
                   setActivePuzzle(null)
                   setActiveTab('library')
