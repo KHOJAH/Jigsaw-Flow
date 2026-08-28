@@ -69,16 +69,16 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-md animate-in fade-in duration-200 select-none"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-md animate-in fade-in duration-200 select-none"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-container/95 border border-outline-variant/50 dark:border-transparent rounded-3xl p-lg shadow-2xl max-w-sm w-full backdrop-blur-xl flex flex-col items-center gap-md animate-in zoom-in-95 duration-200 relative text-on-surface"
+        className="bg-[#181c24] rounded-3xl p-lg shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)] ring-1 ring-white/10 max-w-sm w-full backdrop-blur-2xl flex flex-col items-center gap-md animate-in zoom-in-95 duration-200 relative text-on-surface"
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-variant/80 hover:bg-surface-variant text-on-surface-variant flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           title="Close (Esc)"
         >
           <span className="material-symbols-outlined text-lg">close</span>
@@ -86,29 +86,33 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
 
         {/* Header Title & Piece ID */}
         <div className="text-center">
-          <div className="flex items-center justify-center gap-1.5 font-headline-md text-lg font-bold text-primary">
+          <div className="flex items-center justify-center gap-1.5 font-headline-md text-lg font-bold text-emerald-400">
             <span className="material-symbols-outlined text-xl">search</span>
             <span>Piece #{piece.id + 1}</span>
           </div>
-          <p className="text-xs text-on-surface-variant mt-0.5 font-medium">
+          <p className="text-xs text-slate-400 mt-0.5 font-medium">
             High-Resolution Cut Preview
           </p>
         </div>
 
-        {/* Large Crisp Piece Silhouette Canvas Preview */}
-        <div className="w-48 h-48 bg-surface-container-lowest/80 dark:bg-[#12161c] rounded-2xl border border-outline-variant/40 dark:border-transparent flex items-center justify-center p-md shadow-inner relative group">
+        {/* Tactile Studio Recessed Stage with Radial Spotlight */}
+        <div className="w-56 h-56 rounded-2xl bg-gradient-to-b from-[#0b0d12] to-[#12161f] shadow-[inset_0_2px_12px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)] relative overflow-hidden flex items-center justify-center p-md group">
+          {/* Radial Spotlight Aura */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.2)_0%,rgba(16,185,129,0.05)_45%,transparent_75%)] pointer-events-none" />
+          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(rgba(255,255,255,0.3)_1px,transparent_1px)] [background-size:14px_14px] pointer-events-none" />
+
           <div
-            className="w-full h-full flex items-center justify-center transition-transform duration-300"
+            className="w-full h-full flex items-center justify-center transition-transform duration-300 relative z-10"
             style={{ transform: `rotate(${piece.rotation}deg)` }}
           >
             <canvas
               ref={canvasRef}
-              className="max-w-full max-h-full object-contain filter drop-shadow-2xl pointer-events-none"
+              className="max-w-full max-h-full object-contain filter drop-shadow-[0_12px_28px_rgba(0,0,0,0.85)] pointer-events-none"
             />
           </div>
 
           {rotationEnabled && piece.rotation !== 0 && (
-            <span className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/60 text-white text-[10px] font-mono rounded font-bold">
+            <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/80 text-emerald-300 ring-1 ring-emerald-500/30 text-[10px] font-mono rounded font-bold z-20">
               {piece.rotation}°
             </span>
           )}
@@ -117,24 +121,24 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
         {/* Badges & Telemetry */}
         <div className="flex flex-wrap items-center justify-center gap-xs">
           <span
-            className={`px-sm py-1 rounded-xl text-xs font-bold ${
+            className={`px-3 py-1 rounded-full text-xs font-bold ring-1 ${
               piece.isCorner
-                ? 'bg-tertiary-container text-on-tertiary-container'
+                ? 'bg-rose-500/20 text-rose-300 ring-rose-500/30'
                 : piece.isEdge
-                ? 'bg-secondary-container text-on-secondary-container'
-                : 'bg-surface-variant text-on-surface-variant'
+                ? 'bg-cyan-500/20 text-cyan-300 ring-cyan-500/30'
+                : 'bg-emerald-500/20 text-emerald-300 ring-emerald-500/30'
             }`}
           >
             {pieceTypeLabel}
           </span>
 
           <span
-            className={`px-sm py-1 rounded-xl text-xs font-semibold ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold ring-1 ${
               piece.isLockedToBoard
-                ? 'bg-primary-container text-on-primary-container'
+                ? 'bg-emerald-500/20 text-emerald-300 ring-emerald-500/40'
                 : piece.inTray
-                ? 'bg-surface-variant text-on-surface-variant'
-                : 'bg-outline-variant/30 text-on-surface'
+                ? 'bg-white/10 text-white/90 ring-white/15'
+                : 'bg-amber-500/20 text-amber-300 ring-amber-500/30'
             }`}
           >
             {locationStatus}
@@ -146,7 +150,7 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
           {rotationEnabled && !piece.isLockedToBoard && (
             <button
               onClick={() => onRotate(piece.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-sm rounded-xl bg-surface-variant hover:bg-surface-container-high text-on-surface font-semibold text-xs transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-sm rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs ring-1 ring-white/10 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
               title="Rotate 90° clockwise (R)"
             >
               <span className="material-symbols-outlined text-base">rotate_right</span>
@@ -160,14 +164,14 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
                 onToggleTray(piece.id)
                 onClose()
               }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-sm rounded-xl font-semibold text-xs transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-sm rounded-xl font-bold text-xs transition-all cursor-pointer hover:scale-105 active:scale-95 ${
                 piece.inTray
-                  ? 'bg-primary text-on-primary'
-                  : 'bg-secondary/20 hover:bg-secondary/30 text-secondary border border-secondary/30'
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-[0_4px_24px_rgba(16,185,129,0.4)]'
+                  : 'bg-white/10 hover:bg-white/15 text-white ring-1 ring-white/10'
               }`}
               title={piece.inTray ? 'Pop piece onto table' : 'Return piece to tray'}
             >
-              <span className="material-symbols-outlined text-base">
+              <span className="material-symbols-outlined text-base font-bold">
                 {piece.inTray ? 'dashboard_customize' : 'move_to_inbox'}
               </span>
               <span>{piece.inTray ? 'Pop to Table' : 'To Tray'}</span>
