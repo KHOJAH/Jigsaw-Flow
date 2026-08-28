@@ -122,23 +122,37 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </div>
         </div>
 
-        {/* Category Pills Filter Bar */}
+        {/* Dynamic Category Pills Filter Bar */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-semibold select-none">
-          {['all', 'in-progress', 'completed', 'Nature', 'Ocean', 'Forest', 'Mechanical'].map((cat) => {
+          {[
+            'all',
+            'in-progress',
+            'completed',
+            ...Array.from(new Set(SAMPLE_PUZZLES.map((s) => s.category))),
+          ].map((cat) => {
             const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase()
+            const sampleCount =
+              cat === 'all'
+                ? SAMPLE_PUZZLES.length
+                : cat === 'in-progress'
+                ? recentSaves.length
+                : cat === 'completed'
+                ? completedSaves.length
+                : SAMPLE_PUZZLES.filter((s) => s.category.toLowerCase() === cat.toLowerCase()).length
+
             const label =
               cat === 'all'
-                ? 'All Puzzles'
+                ? `All (${SAMPLE_PUZZLES.length})`
                 : cat === 'in-progress'
                 ? `In Progress (${recentSaves.length})`
                 : cat === 'completed'
                 ? `Completed (${completedSaves.length})`
-                : cat
+                : `${cat} (${sampleCount})`
             return (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                   isSelected
                     ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs font-bold ring-1 ring-primary/30'
                     : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
@@ -332,13 +346,37 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   onClick={() => onSelectImage(sample.imageSrc, sample.title, sample.pieceCount)}
                   className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
                 >
-                  <div className="relative h-44 overflow-hidden bg-surface-variant">
+                  <div className="relative h-48 overflow-hidden bg-surface-variant">
                     <img
                       alt={sample.title}
                       src={sample.imageSrc}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-sm right-sm bg-primary-container text-on-primary-container font-label-sm text-label-sm px-sm py-xs rounded-full shadow-sm">
+                    {/* Difficulty Badge */}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md backdrop-blur-md ${
+                          sample.pieceCount <= 50
+                            ? 'bg-emerald-600/90 text-white dark:bg-emerald-500/30 dark:text-emerald-300'
+                            : sample.pieceCount <= 150
+                            ? 'bg-sky-600/90 text-white dark:bg-sky-500/30 dark:text-sky-300'
+                            : sample.pieceCount <= 250
+                            ? 'bg-amber-600/90 text-white dark:bg-amber-500/30 dark:text-amber-300'
+                            : 'bg-rose-600/90 text-white dark:bg-rose-500/30 dark:text-rose-300'
+                        }`}
+                      >
+                        {sample.pieceCount <= 50
+                          ? 'Easy'
+                          : sample.pieceCount <= 150
+                          ? 'Medium'
+                          : sample.pieceCount <= 250
+                          ? 'Hard'
+                          : 'Master'}
+                      </span>
+                    </div>
+                    {/* Category Tag */}
+                    <div className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-md text-white font-label-sm text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md">
                       {sample.category}
                     </div>
                   </div>
