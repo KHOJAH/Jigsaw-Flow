@@ -56,24 +56,28 @@ function createWindow() {
 }
 
 // Window Control IPC
-ipcMain.handle('window:minimize', () => {
-  win?.minimize()
+ipcMain.handle('window:minimize', (event) => {
+  const targetWin = BrowserWindow.fromWebContents(event.sender) || win
+  targetWin?.minimize()
 })
 
-ipcMain.handle('window:maximize', () => {
-  if (win?.isMaximized()) {
-    win.unmaximize()
+ipcMain.handle('window:maximize', (event) => {
+  const targetWin = BrowserWindow.fromWebContents(event.sender) || win
+  if (targetWin?.isMaximized()) {
+    targetWin.unmaximize()
   } else {
-    win?.maximize()
+    targetWin?.maximize()
   }
 })
 
-ipcMain.handle('window:close', () => {
-  win?.close()
+ipcMain.handle('window:close', (event) => {
+  const targetWin = BrowserWindow.fromWebContents(event.sender) || win
+  targetWin?.close()
 })
 
-ipcMain.handle('window:isMaximized', () => {
-  return win?.isMaximized() ?? false
+ipcMain.handle('window:isMaximized', (event) => {
+  const targetWin = BrowserWindow.fromWebContents(event.sender) || win
+  return targetWin?.isMaximized() ?? false
 })
 
 // File Dialogs IPC

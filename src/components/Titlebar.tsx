@@ -23,24 +23,41 @@ export const Titlebar: React.FC<TitlebarProps> = ({
   }, [])
 
   const handleMinimize = () => {
-    window.electronAPI?.minimize()
+    if (window.electronAPI) {
+      window.electronAPI.minimize()
+    }
   }
 
   const handleMaximize = () => {
-    window.electronAPI?.maximize()
+    if (window.electronAPI) {
+      window.electronAPI.maximize()
+    } else {
+      // Browser fullscreen fallback
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {})
+        setIsMaximized(true)
+      } else {
+        document.exitFullscreen().catch(() => {})
+        setIsMaximized(false)
+      }
+    }
   }
 
   const handleClose = () => {
-    window.electronAPI?.close()
+    if (window.electronAPI) {
+      window.electronAPI.close()
+    } else {
+      window.close()
+    }
   }
 
   return (
     <header
-      className="h-8 bg-surface-container border-b border-outline-variant/30 dark:border-transparent flex items-center justify-between px-3 select-none flex-shrink-0 z-50 text-on-surface"
+      className="h-8 bg-surface-container border-b border-outline-variant/30 dark:border-transparent flex items-center justify-between px-3 select-none flex-shrink-0 z-50 text-on-surface app-region-drag"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* App Branding & Window Title */}
-      <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+      <div className="flex items-center gap-2 text-xs font-semibold text-primary pointer-events-none">
         <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
           extension
         </span>
@@ -55,13 +72,14 @@ export const Titlebar: React.FC<TitlebarProps> = ({
 
       {/* Desktop Window Controls & Quick Theme Toggle */}
       <div
-        className="flex items-center gap-1"
+        className="flex items-center gap-1 app-region-no-drag pointer-events-auto z-50"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
-            className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-primary transition-colors cursor-pointer mr-1"
+            className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-primary transition-colors cursor-pointer mr-1 app-region-no-drag"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             <span className="material-symbols-outlined text-sm">
@@ -71,14 +89,16 @@ export const Titlebar: React.FC<TitlebarProps> = ({
         )}
         <button
           onClick={handleMinimize}
-          className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-on-surface transition-colors"
+          className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer app-region-no-drag"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           title="Minimize"
         >
           <span className="material-symbols-outlined text-sm">minimize</span>
         </button>
         <button
           onClick={handleMaximize}
-          className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-on-surface transition-colors"
+          className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer app-region-no-drag"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           title={isMaximized ? 'Restore' : 'Maximize'}
         >
           <span className="material-symbols-outlined text-sm">
@@ -87,7 +107,8 @@ export const Titlebar: React.FC<TitlebarProps> = ({
         </button>
         <button
           onClick={handleClose}
-          className="w-7 h-6 flex items-center justify-center hover:bg-error hover:text-on-error rounded text-on-surface-variant transition-colors"
+          className="w-7 h-6 flex items-center justify-center hover:bg-error hover:text-on-error rounded text-on-surface-variant transition-colors cursor-pointer app-region-no-drag"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           title="Close"
         >
           <span className="material-symbols-outlined text-sm">close</span>

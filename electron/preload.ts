@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
+// @ts-ignore
+const { contextBridge, ipcRenderer } = require('electron')
 
 export interface ElectronAPI {
   // Window controls
