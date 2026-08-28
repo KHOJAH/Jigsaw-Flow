@@ -381,7 +381,7 @@ export const App: React.FC = () => {
         />
 
         {/* View Switcher */}
-        <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <main key={activeTab} className="flex-1 flex flex-col h-full overflow-hidden relative animate-in fade-in duration-200">
           {activeTab === 'library' && (
             <LibraryView
               recentSaves={recentSaves}

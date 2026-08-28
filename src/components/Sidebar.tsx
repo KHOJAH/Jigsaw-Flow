@@ -54,14 +54,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col gap-xs flex-grow">
         <button
           onClick={() => onTabChange('library')}
-          className={`flex items-center gap-sm px-md py-sm rounded-lg font-bold transition-all ${
+          className={`group flex items-center gap-sm px-md py-sm rounded-xl font-bold transition-all duration-200 ease-out outline-none select-none active:scale-[0.97] cursor-pointer ${
             activeTab === 'library'
-              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25'
-              : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1 duration-200'
+              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-500/30'
+              : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1'
           }`}
         >
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined transition-transform duration-200 group-hover:scale-110"
             style={activeTab === 'library' ? { fontVariationSettings: "'FILL' 1" } : {}}
           >
             grid_view
@@ -72,16 +72,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={() => onTabChange('workspace')}
           disabled={!hasActivePuzzle}
-          className={`flex items-center gap-sm px-md py-sm rounded-lg font-bold transition-all ${
+          className={`group flex items-center gap-sm px-md py-sm rounded-xl font-bold transition-all duration-200 ease-out outline-none select-none active:scale-[0.97] ${
             activeTab === 'workspace'
-              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25'
+              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-500/30'
               : hasActivePuzzle
-              ? 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1 duration-200 cursor-pointer'
-              : 'text-outline-variant/60 cursor-not-allowed'
+              ? 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1 cursor-pointer'
+              : 'opacity-30 cursor-not-allowed text-on-surface-variant pointer-events-none'
           }`}
         >
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined transition-transform duration-200 group-hover:scale-110"
             style={activeTab === 'workspace' ? { fontVariationSettings: "'FILL' 1" } : {}}
           >
             extension
@@ -94,14 +94,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => onTabChange('history')}
-          className={`flex items-center gap-sm px-md py-sm rounded-lg font-bold transition-all ${
+          className={`group flex items-center gap-sm px-md py-sm rounded-xl font-bold transition-all duration-200 ease-out outline-none select-none active:scale-[0.97] cursor-pointer ${
             activeTab === 'history'
-              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25'
-              : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1 duration-200'
+              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-500/30'
+              : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1'
           }`}
         >
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined transition-transform duration-200 group-hover:scale-110"
             style={activeTab === 'history' ? { fontVariationSettings: "'FILL' 1" } : {}}
           >
             history
@@ -111,14 +111,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => onTabChange('settings')}
-          className={`flex items-center gap-sm px-md py-sm rounded-lg font-bold transition-all mt-auto ${
+          className={`group flex items-center gap-sm px-md py-sm rounded-xl font-bold transition-all duration-200 ease-out mt-auto outline-none select-none active:scale-[0.97] cursor-pointer ${
             activeTab === 'settings'
-              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25'
-              : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1 duration-200'
+              ? 'bg-primary text-on-primary shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-1 dark:ring-emerald-500/30'
+              : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface hover:translate-x-1'
           }`}
         >
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined transition-transform duration-200 group-hover:scale-110"
             style={activeTab === 'settings' ? { fontVariationSettings: "'FILL' 1" } : {}}
           >
             settings

@@ -67,7 +67,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   return (
     <div className="flex-1 overflow-y-auto p-lg md:p-xl bg-background text-on-background">
       <div className="max-w-6xl mx-auto space-y-xl">
-        {/* Header with 1-Click Theme Toggle */}
+        {/* Header */}
         <div className="flex items-center justify-between gap-md">
           <div className="flex flex-col gap-xs">
             <h1 className="font-display-lg text-display-lg text-primary font-bold">Library</h1>
@@ -75,19 +75,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               Create custom jigsaw puzzles from your images and manage your collection.
             </p>
           </div>
-
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              className="px-md py-2 rounded-2xl bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/40 dark:border-transparent shadow-sm flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 text-xs font-semibold flex-shrink-0"
-              title="Toggle Light / Dark Mode"
-            >
-              <span className="material-symbols-outlined text-lg text-primary">
-                {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-              </span>
-              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-            </button>
-          )}
         </div>
 
         {/* Bento Grid Layout */}
