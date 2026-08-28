@@ -1,61 +1,51 @@
-# Jigsaw Flow 🧩
+# Jigsaw Flow
 
-> **A professional, high-performance desktop jigsaw puzzle studio built with Electron, React, TypeScript, and WebGL/Canvas.**
+A desktop jigsaw puzzle application built with Electron, React, TypeScript, and HTML5 Canvas.
 
-Turn any high-resolution photo or artwork into an interactive jigsaw puzzle with authentic parametric Bézier cuts, realistic magnetic locking physics, solid board grounding, and tactile procedural audio.
-
----
-
-## ✨ Features
-
-### 🎮 Gameplay & Physics Engine
-- **Parametric Bézier Jigsaw Slicing**: Slices images into interlocking tabs and blanks with mathematically symmetrical closed contours.
-- **Disjoint-Set Union (DSU) Clustering**: Snapped pieces weld into cohesive physical clusters that move and rotate together as a single unit.
-- **Solid Board Grounding**: Pieces snapped into their target slots permanently anchor to the board mat (`isLockedToBoard = true`), forming a solid solved foundation.
-- **5-Layer Rendering Pipeline**:
-  - *Layer 0 (Base)*: Tabletop surface (*Felt, Dark Walnut, Cutting Mat, Slate*) and board frame.
-  - *Layer 1 (Ghost)*: Translucent reference image overlay with live opacity control.
-  - *Layer 2 (Grounded)*: Board-locked pieces.
-  - *Layer 3 (Table)*: Loose pieces and clusters on the virtual table.
-  - *Layer 4 (Active Top)*: Currently dragged piece/cluster with elevated drop-shadow shaders.
-- **Cursor-Anchored Pan & Zoom**: Smooth viewport navigation maintaining cursor focus:
-  $$P_{\text{world}} = \frac{P_{\text{screen}} - \vec{T}}{s}, \quad \vec{T}_{\text{new}} = P_{\text{screen}} - P_{\text{world}} \cdot s_{\text{new}}$$
-
-### 🗂️ Piece Organizer Tray & Navigation
-- **Seamless Direct Drag-and-Drop**: Drag any thumbnail straight out of the tray onto the table or board in one continuous gesture.
-- **4 Categorized Tabs**: Filter pieces by `All`, `Corners`, `Edges`, or `Centers`.
-- **Deterministic Non-Overlapping Scatter**: Distributes loose pieces neatly into dedicated perimeter lanes around the board with zero overlap.
-- **Scope-Aware Tidy**: Gathers loose un-snapped pieces back into the tray based on active tab.
-- **Picture-in-Picture (PiP) Navigator**: Floating thumbnail with click-to-locate navigation (clicking an area centers the main canvas on that board region).
-
-### 🔊 Procedural Web Audio Synthesizer
-- Generates tactile wooden clicks, magnetic snaps, table drops, and major 9th victory fanfares in real-time with zero external audio file dependencies.
-
-### 💾 Persistence & System Integration
-- Local JSON save file persistence in Electron's `userData` path with auto-save.
-- Export and import `.jigsaw` save files for backup or sharing.
-- Frameless desktop window with custom titlebar controls.
+Transform any high-resolution image into an interactive jigsaw puzzle with parametric Bezier cuts, cluster snapping physics, board grounding, and procedural audio.
 
 ---
 
-## ⌨️ Controls & Shortcuts
+## Features
 
-| Action | Shortcut / Mouse Gesture |
+### Gameplay and Physics Engine
+- **Parametric Bezier Cuts**: Slices images into interlocking tabs and blanks with mathematically symmetrical curves.
+- **Disjoint-Set Union (DSU) Clustering**: Snapped pieces join into cohesive clusters that move and rotate together.
+- **Board Grounding**: Pieces placed in their correct slots anchor permanently to the board.
+- **Multi-Layer Rendering**: Dedicated rendering passes for tabletop surfaces, reference ghost overlays, grounded pieces, loose table pieces, and active drag selections.
+- **Cursor-Anchored Pan and Zoom**: Smooth navigation that keeps the view focused on the cursor position.
+
+### Piece Management and Workspace
+- **Piece Tray**: Categorized tabs for All, Corners, Edges, and Centers with direct drag-and-drop onto the board.
+- **Collapsible Sidebar**: Full-width workspace canvas with an adaptive piece tray dock.
+- **Picture-in-Picture Navigator**: Floating reference card with click-to-locate navigation.
+- **Light and Dark Themes**: High-contrast, theme-adaptive interface designed for both bright and dark environments.
+
+### Audio and Storage
+- **Procedural Audio**: Generates tactile clicks, snaps, and victory fanfares in real time using the Web Audio API without external sound files.
+- **Local Persistence**: Automatic game saving with support for exporting and importing `.jigsaw` files.
+
+---
+
+## Controls and Shortcuts
+
+| Action | Shortcut / Gesture |
 | --- | --- |
-| **Pan Canvas** | `Space + Drag` or `Middle Click + Drag` |
-| **Zoom In / Out** | `Mouse Wheel` (anchored to cursor) |
-| **Rotate Piece / Cluster** | `R` key or `Double Click` |
-| **Toggle Organizer Tray** | `T` key |
-| **Isolate Border Pieces** | `B` key |
-| **Pick Up & Drag** | `Left Click + Drag` |
+| Pan Canvas | `Space + Drag` or `Middle Click + Drag` |
+| Zoom In / Out | `Mouse Wheel` (cursor-anchored) |
+| Rotate Piece / Cluster | `R` key or `Double Click` |
+| Toggle Piece Tray | `T` key |
+| Smart Hint | `H` key |
+| Multi-Select | `Shift + Drag` (Marquee Selection) |
+| Pick Up and Drag | `Left Click + Drag` |
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [npm](https://www.npmjs.com/) (v9 or higher)
+- Node.js (v18 or higher)
+- npm (v9 or higher)
 
 ### Installation
 
@@ -73,49 +63,50 @@ npm install
 ### Development
 
 ```bash
-# Start Vite development server with Electron desktop window
+# Start the development server with Electron window
 npm run dev
 ```
 
 ### Production Build
 
 ```bash
-# Compile TypeScript and bundle production assets
+# Build the application for production
 npm run build
 ```
 
 ---
 
-## 🏗️ Project Architecture
+## Project Structure
 
 ```
 ├── electron/
-│   ├── main.ts              # Electron main process & IPC handlers
-│   └── preload.ts           # Secure contextBridge API bindings
+│   ├── main.ts              # Electron main process and IPC handlers
+│   └── preload.ts           # Context bridge API bindings
 ├── src/
-│   ├── assets/              # Curated starter puzzles
+│   ├── assets/              # Starter puzzles and static assets
 │   ├── components/
-│   │   ├── Titlebar.tsx     # Custom frameless window controls
+│   │   ├── Titlebar.tsx     # Custom window header
 │   │   ├── Sidebar.tsx      # App navigation drawer
-│   │   ├── LibraryView.tsx  # Hero dropzone, recent saves, completed gallery
-│   │   ├── ImportModal.tsx  # Aspect ratio crop, piece slider & cut style
-│   │   ├── WorkspaceView.tsx# Interactive canvas, pan/zoom & drag physics
-│   │   ├── PieceTray.tsx    # 4-tab organizer tray with direct drag-out
-│   │   ├── CanvasHUD.tsx    # Telemetry, PiP navigator & ghost slider
-│   │   ├── VictoryModal.tsx # Stats breakdown, celebration fanfare & confetti
-│   │   ├── SettingsModal.tsx# Audio, controls, and table surface picker
-│   │   └── HistoryView.tsx  # Full game archive & stats tracking
+│   │   ├── LibraryView.tsx  # Puzzle library and import dropzone
+│   │   ├── ImportModal.tsx  # Image crop and piece configuration
+│   │   ├── WorkspaceView.tsx# Canvas workspace and interaction layer
+│   │   ├── PieceTray.tsx    # Piece organizer dock
+│   │   ├── CanvasHUD.tsx    # Workspace HUD and controls
+│   │   ├── PieceInspectModal.tsx # High-resolution piece preview
+│   │   ├── VictoryModal.tsx # Completion dialog and stats
+│   │   ├── SettingsModal.tsx# Audio and theme preferences
+│   │   └── HistoryView.tsx  # Solved puzzle archives and statistics
 │   ├── engine/
-│   │   ├── JigsawGenerator.ts# Canonical Bézier jigsaw cutting mathematics
-│   │   ├── ClusterManager.ts # DSU hierarchy, board grounding & scatter layout
-│   │   ├── CanvasRenderer.ts # 5-layer 60fps rendering pipeline
-│   │   ├── AudioEngine.ts   # Procedural Web Audio synthesizer
-│   │   └── StorageService.ts# Local disk save persistence & file export/import
+│   │   ├── JigsawGenerator.ts# Bezier slicing and piece geometry
+│   │   ├── ClusterManager.ts # DSU hierarchy and cluster physics
+│   │   ├── CanvasRenderer.ts # Canvas rendering pipeline
+│   │   ├── AudioEngine.ts   # Web Audio sound generator
+│   │   └── StorageService.ts# Local save file persistence
 │   ├── types/
-│   │   └── puzzle.ts        # Type definitions for puzzle state & pieces
-│   ├── App.tsx              # Root application router & state coordinator
+│   │   └── puzzle.ts        # TypeScript interfaces and types
+│   ├── App.tsx              # Root application component
 │   ├── main.tsx             # React entry point
-│   └── index.css            # Tailwind CSS theme layers & styles
+│   └── index.css            # Tailwind CSS styling and theme tokens
 ├── index.html
 ├── package.json
 ├── tsconfig.json
@@ -125,6 +116,6 @@ npm run build
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
