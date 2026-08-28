@@ -12,7 +12,7 @@ interface VictoryModalProps {
     accuracy: number
   }
   onRestartFresh: () => void
-  onReplayHarder: (nextPieces: number) => void
+  onReplayHarder: (nextPieces: number, nextMultiplier: string) => void
   onReturnToLibrary: () => void
 }
 
@@ -151,7 +151,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             <span>Restart (Fresh)</span>
           </button>
           <button
-            onClick={() => onReplayHarder(nextTier.count)}
+            onClick={() => onReplayHarder(nextTier.count, nextTier.mult)}
             className="py-sm px-md rounded-xl bg-secondary hover:bg-secondary/90 text-on-secondary font-bold text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             title={`Generate harder puzzle with ${nextTier.mult} (${nextTier.count} pieces)`}
           >

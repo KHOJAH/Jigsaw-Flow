@@ -95,6 +95,14 @@ export const App: React.FC = () => {
     }
   }
 
+  // Clean base puzzle title removing any previous (Harder) or (x1, x2, etc.) suffixes
+  const cleanBaseTitle = (rawTitle: string): string => {
+    return rawTitle
+      .replace(/\s*\((?:Harder|x\d+|[^)]*p)[^)]*\)/gi, '')
+      .replace(/\s*\((?:Harder)\)/gi, '')
+      .trim()
+  }
+
   // Handle image selected from library or drag-and-drop
   const handleSelectImage = (
     imageSrc: string,
@@ -102,7 +110,7 @@ export const App: React.FC = () => {
     defaultPieces: number = 48
   ) => {
     setImportImageSrc(imageSrc)
-    setImportInitialTitle(title)
+    setImportInitialTitle(cleanBaseTitle(title))
     setImportInitialPieces(defaultPieces)
     setIsImportModalOpen(true)
   }
@@ -405,10 +413,11 @@ export const App: React.FC = () => {
             setIsVictoryModalOpen(false)
             handleRestartPuzzle(activePuzzle)
           }}
-          onReplayHarder={(nextPieces) => {
+          onReplayHarder={(nextPieces, nextMultiplier) => {
             setIsVictoryModalOpen(false)
+            const baseTitle = cleanBaseTitle(activePuzzle.title)
             setImportImageSrc(activePuzzle.imageSrc)
-            setImportInitialTitle(`${activePuzzle.title} (Harder)`)
+            setImportInitialTitle(`${baseTitle} (${nextMultiplier})`)
             setImportInitialPieces(nextPieces)
             setIsImportModalOpen(true)
           }}
