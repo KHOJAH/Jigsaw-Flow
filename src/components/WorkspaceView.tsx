@@ -112,11 +112,20 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzle.id, puzzle.imageSrc])
 
-  // 60fps Animation render loop
-  useEffect(() => {
-    let animationFrameId: number
+  // Activity-aware render loop for massive idle CPU and battery savings
+  const isInteractingRef = useRef<boolean>(false)
+  const isAnimatingUntilRef = useRef<number>(0)
 
-    const renderLoop = () => {
+  // Wake up animation loop for duration (e.g. during snaps or particle glows)
+  const wakeRenderLoop = useCallback((durationMs: number = 600) => {
+    isAnimatingUntilRef.current = performance.now() + durationMs
+  }, [])
+
+  useEffect(() => {
+    let animationFrameId: number | null = null
+    let isMounted = true
+
+    const doRender = () => {
       const canvas = canvasRef.current
       if (canvas) {
         const ctx = canvas.getContext('2d')
@@ -145,14 +154,38 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           )
         }
       }
-
-      animationFrameId = requestAnimationFrame(renderLoop)
     }
 
-    renderLoop()
+    const loop = () => {
+      if (!isMounted) return
 
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [viewport, pieces, puzzle.boardWidth, puzzle.boardHeight, settings, selectedPieceIds])
+      doRender()
+
+      const isBusy =
+        isInteractingRef.current ||
+        activeClusterRef.current !== null ||
+        isPanningRef.current ||
+        marqueeBoxRef.current !== null ||
+        hintedPiece !== null ||
+        performance.now() < isAnimatingUntilRef.current
+
+      if (isBusy) {
+        animationFrameId = requestAnimationFrame(loop)
+      } else {
+        animationFrameId = null
+      }
+    }
+
+    // Render immediate frame on state update
+    loop()
+
+    return () => {
+      isMounted = false
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [viewport, pieces, puzzle.boardWidth, puzzle.boardHeight, settings, selectedPieceIds, hintedPiece])
 
   // Convert screen coordinates to world coordinates: P_world = (P_screen - Translation) / Scale
   const screenToWorld = useCallback(
@@ -558,6 +591,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               if (res.hasSnapped) {
                 totalSnapped += res.snappedCount
                 rendererRef.current.triggerSnapFlash(targetPiece.clusterId)
+                wakeRenderLoop(600)
               }
               if (res.isFullySolved) isSolved = true
             }
@@ -572,6 +606,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           if (snapResult.hasSnapped) {
             totalSnapped += snapResult.snappedCount
             rendererRef.current.triggerSnapFlash(activeClusterRef.current)
+            wakeRenderLoop(600)
           }
           if (snapResult.isFullySolved) isSolved = true
         }
@@ -672,20 +707,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     const newY = mouseY - wy * newScale
 
     setViewport({ x: newX, y: newY, scale: newScale })
-  }
-
-  // Smooth Click-to-Locate PiP Navigation
-  const handleLocateBoardRegion = (normX: number, normY: number) => {
-    if (!canvasRef.current) return
-    const { clientWidth, clientHeight } = canvasRef.current
-    const targetBoardX = normX * puzzle.boardWidth
-    const targetBoardY = normY * puzzle.boardHeight
-
-    // Center viewport on that board point
-    const newX = clientWidth / 2 - targetBoardX * viewport.scale
-    const newY = clientHeight / 2 - targetBoardY * viewport.scale
-
-    setViewport((prev) => ({ ...prev, x: newX, y: newY }))
   }
 
   // Rotate single cluster around centroid
@@ -1093,7 +1114,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         onResetZoom={centerBoard}
         onSaveAndExit={onBackToLibrary}
         onAutoComplete={handleAutoComplete}
-        onLocateBoardRegion={handleLocateBoardRegion}
         onHint={handleTriggerHint}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={onToggleSidebar}

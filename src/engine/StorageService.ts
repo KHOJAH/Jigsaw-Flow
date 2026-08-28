@@ -19,10 +19,50 @@ export const DEFAULT_SETTINGS: UserSettings = {
 
 export class StorageService {
   /**
+   * Compresses large base64 image data to lightweight WebP/JPEG thumbnail
+   */
+  static async compressThumbnail(imageSrc: string, maxDim: number = 320): Promise<string> {
+    if (!imageSrc || imageSrc.startsWith('http') || imageSrc.length < 50000) {
+      return imageSrc
+    }
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const aspect = img.width / img.height
+        let w = maxDim
+        let h = Math.round(maxDim / aspect)
+        if (img.width < img.height) {
+          h = maxDim
+          w = Math.round(maxDim * aspect)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h)
+          const webp = canvas.toDataURL('image/webp', 0.8)
+          resolve(webp.length < imageSrc.length ? webp : imageSrc)
+        } else {
+          resolve(imageSrc)
+        }
+      }
+      img.onerror = () => resolve(imageSrc)
+      img.src = imageSrc
+    })
+  }
+
+  /**
    * Save a puzzle game state
    */
   static async saveGame(save: PuzzleSave): Promise<{ success: boolean; error?: string }> {
     try {
+      // Compress thumbnail if needed to save disk and memory space
+      if (save.thumbnailUrl && save.thumbnailUrl.length > 50000) {
+        save.thumbnailUrl = await this.compressThumbnail(save.thumbnailUrl)
+      }
+
       if (window.electronAPI) {
         return await window.electronAPI.saveGame(save.id, save)
       } else {

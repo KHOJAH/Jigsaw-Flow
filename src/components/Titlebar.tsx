@@ -44,7 +44,7 @@ export const Titlebar: React.FC<TitlebarProps> = ({
         <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
           extension
         </span>
-        <span className="font-headline-md tracking-tight">Jigsaw Flow</span>
+        <span className="font-headline-md tracking-tight font-bold">Jigsaw Flow</span>
         {currentPuzzleTitle && (
           <>
             <span className="text-outline-variant">/</span>

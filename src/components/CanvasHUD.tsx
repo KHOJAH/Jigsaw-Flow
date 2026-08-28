@@ -16,7 +16,6 @@ interface CanvasHUDProps {
   onResetZoom: () => void
   onSaveAndExit: () => void
   onAutoComplete?: () => void
-  onLocateBoardRegion?: (normX: number, normY: number) => void
   onHint?: () => void
   isSidebarCollapsed?: boolean
   onToggleSidebar?: () => void
@@ -37,12 +36,10 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
   onResetZoom,
   onSaveAndExit,
   onAutoComplete,
-  onLocateBoardRegion,
   onHint,
   isSidebarCollapsed = false,
   onToggleSidebar,
 }) => {
-  const [showReferenceCard, setShowReferenceCard] = useState(false)
   const [showGhostSlider, setShowGhostSlider] = useState(false)
   const [showKeybindHelp, setShowKeybindHelp] = useState(false)
 
@@ -56,14 +53,6 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
         .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const handlePiPClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!onLocateBoardRegion) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const normX = (e.clientX - rect.left) / rect.width
-    const normY = (e.clientY - rect.top) / rect.height
-    onLocateBoardRegion(normX, normY)
   }
 
   return (
@@ -175,19 +164,6 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
             )}
           </div>
 
-          {/* Reference Image Button */}
-          <button
-            onClick={() => setShowReferenceCard(!showReferenceCard)}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-              showReferenceCard
-                ? 'bg-primary text-on-primary shadow-sm'
-                : 'text-on-surface-variant hover:bg-surface-variant'
-            }`}
-            title="Show Reference Artwork (PiP Navigator)"
-          >
-            <span className="material-symbols-outlined text-lg">image</span>
-          </button>
-
           {/* Smart Hint Button */}
           {onHint && (
             <button
@@ -234,34 +210,6 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Interactive PiP Navigator Window */}
-      {showReferenceCard && (
-        <div className="absolute top-20 right-4 z-40 bg-surface-container/95 backdrop-blur-md rounded-2xl border border-outline-variant/30 shadow-2xl p-sm max-w-xs animate-in fade-in slide-in-from-top-2 duration-150 select-none">
-          <div className="flex justify-between items-center mb-xs px-1">
-            <span className="font-label-sm text-xs font-semibold text-primary flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">explore</span>
-              <span>PiP Navigator (Click to locate)</span>
-            </span>
-            <button
-              onClick={() => setShowReferenceCard(false)}
-              className="text-on-surface-variant hover:text-on-surface p-0.5 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-sm">close</span>
-            </button>
-          </div>
-          <div
-            onClick={handlePiPClick}
-            className="rounded-xl overflow-hidden border border-outline-variant/30 shadow-md max-h-48 bg-black cursor-crosshair relative group"
-            title="Click anywhere to pan canvas to that region"
-          >
-            <img src={imageSrc} alt="Reference" className="w-full h-full object-contain pointer-events-none" />
-            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
-              Click to Center View
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Shortcuts Modal Popover */}
       {showKeybindHelp && (

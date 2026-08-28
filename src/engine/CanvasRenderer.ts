@@ -195,6 +195,23 @@ export class CanvasRenderer {
       const now = performance.now()
       const isFlashing = this.flashClusterId !== null && now < this.flashEndTime
 
+      // Viewport Culling Bounds (in world space) with generous safety padding for rotated tabs and shadows
+      const pad = 100 / Math.max(0.1, viewport.scale)
+      const viewMinX = -viewport.x / viewport.scale - pad
+      const viewMinY = -viewport.y / viewport.scale - pad
+      const viewMaxX = (canvasWidth - viewport.x) / viewport.scale + pad
+      const viewMaxY = (canvasHeight - viewport.y) / viewport.scale + pad
+
+      const isPieceVisible = (p: PuzzlePiece): boolean => {
+        const radius = Math.max(p.width, p.height) * 1.5
+        return (
+          p.x + radius >= viewMinX &&
+          p.x - radius <= viewMaxX &&
+          p.y + radius >= viewMinY &&
+          p.y - radius <= viewMaxY
+        )
+      }
+
       // -------------------------------------------------------------
       // LAYER 2: Grounded / Board-Locked Pieces (isLockedToBoard = true)
       // -------------------------------------------------------------
@@ -204,6 +221,7 @@ export class CanvasRenderer {
       for (const piece of groundedPieces) {
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
         const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
+        if (!isThisFlashing && !isSelected && !isPieceVisible(piece)) continue
         this.drawSinglePiece(ctx, piece, settings, 1.0, false, isThisFlashing, isSelected)
       }
 
@@ -220,6 +238,7 @@ export class CanvasRenderer {
         const isClustered = (clusterSizes.get(piece.clusterId) || 0) > 1
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
         const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
+        if (!isThisFlashing && !isSelected && !isPieceVisible(piece)) continue
         this.drawSinglePiece(ctx, piece, settings, 1.0, !isClustered, isThisFlashing, isSelected)
       }
 

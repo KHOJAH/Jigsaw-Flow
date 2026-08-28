@@ -10,9 +10,31 @@ interface PieceThumbnailProps {
 }
 
 const PieceThumbnail: React.FC<PieceThumbnailProps> = ({ piece, getPieceSprite }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  // IntersectionObserver to lazy-render canvas only when in or near visible scroll view
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '150px' }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
+    if (!isVisible) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -25,13 +47,21 @@ const PieceThumbnail: React.FC<PieceThumbnailProps> = ({ piece, getPieceSprite }
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(sprite.canvas, 0, 0)
     }
-  }, [piece.id, getPieceSprite])
+  }, [isVisible, piece.id, getPieceSprite])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full object-contain filter drop-shadow-md pointer-events-none transition-transform duration-200 group-hover:scale-105"
-    />
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center">
+      {isVisible ? (
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full object-contain filter drop-shadow-md pointer-events-none transition-transform duration-200 group-hover:scale-105"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center opacity-30">
+          <span className="material-symbols-outlined text-base">extension</span>
+        </div>
+      )}
+    </div>
   )
 }
 
