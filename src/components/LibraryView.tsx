@@ -6,6 +6,8 @@ interface LibraryViewProps {
   recentSaves: PuzzleSave[]
   completedSaves: PuzzleSave[]
   activePuzzle: PuzzleSave | null
+  theme?: string
+  onToggleTheme?: () => void
   onResumePuzzle: (save: PuzzleSave) => void
   onReplayPuzzle: (save: PuzzleSave) => void
   onDeleteSave: (id: string) => void
@@ -17,6 +19,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   recentSaves,
   completedSaves,
   activePuzzle,
+  theme,
+  onToggleTheme,
   onResumePuzzle,
   onReplayPuzzle,
   onDeleteSave,
@@ -63,12 +67,27 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   return (
     <div className="flex-1 overflow-y-auto p-lg md:p-xl bg-background text-on-background">
       <div className="max-w-6xl mx-auto space-y-xl">
-        {/* Header */}
-        <div className="flex flex-col gap-xs">
-          <h1 className="font-display-lg text-display-lg text-primary">Library</h1>
-          <p className="font-body-lg text-body-lg text-on-surface-variant">
-            Create custom jigsaw puzzles from your images and manage your collection.
-          </p>
+        {/* Header with 1-Click Theme Toggle */}
+        <div className="flex items-center justify-between gap-md">
+          <div className="flex flex-col gap-xs">
+            <h1 className="font-display-lg text-display-lg text-primary font-bold">Library</h1>
+            <p className="font-body-lg text-body-lg text-on-surface-variant">
+              Create custom jigsaw puzzles from your images and manage your collection.
+            </p>
+          </div>
+
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className="px-md py-2 rounded-2xl bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/40 dark:border-transparent shadow-sm flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 text-xs font-semibold flex-shrink-0"
+              title="Toggle Light / Dark Mode"
+            >
+              <span className="material-symbols-outlined text-lg text-primary">
+                {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+              </span>
+              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+          )}
         </div>
 
         {/* Bento Grid Layout */}
@@ -82,7 +101,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             className={`col-span-1 md:col-span-8 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-xl min-h-[280px] cursor-pointer group shadow-sm ${
               isDraggingOver
                 ? 'border-primary bg-primary-fixed/30 scale-[1.01]'
-                : 'border-outline-variant bg-surface-container hover:border-primary hover:bg-surface-container-high'
+                : 'border-outline-variant dark:border-white/10 bg-surface-container hover:border-primary hover:bg-surface-container-high'
             }`}
           >
             <div className="w-16 h-16 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-md group-hover:scale-110 transition-transform shadow-sm">
@@ -108,7 +127,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           {/* Quick Stats & Active Status (Spans 4 cols) */}
           <div className="col-span-1 md:col-span-4 flex flex-col gap-lg">
             {activePuzzle ? (
-              <div className="bg-primary text-on-primary rounded-xl p-md shadow-md flex-1 flex flex-col justify-between">
+              <div className="bg-primary text-on-primary dark:bg-[#1a2e24] dark:border dark:border-emerald-500/20 rounded-xl p-md shadow-md flex-1 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mb-xs">
@@ -146,7 +165,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="bg-surface-container rounded-xl p-md shadow-sm border border-outline-variant/20 flex flex-col justify-between flex-1">
+              <div className="bg-surface-container rounded-xl p-md shadow-sm border border-outline-variant/20 dark:border-transparent flex flex-col justify-between flex-1">
                 <div>
                   <div className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
                     Ready to Play
@@ -162,7 +181,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             )}
 
             {/* Completed Count Widget */}
-            <div className="bg-surface-container rounded-xl p-md flex items-center gap-md border border-outline-variant/20 shadow-sm">
+            <div className="bg-surface-container rounded-xl p-md flex items-center gap-md border border-outline-variant/20 dark:border-transparent shadow-sm">
               <div className="w-12 h-12 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center flex-shrink-0">
                 <span className="material-symbols-outlined text-2xl">emoji_events</span>
               </div>
@@ -191,7 +210,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   <div
                     key={save.id}
                     onClick={() => onResumePuzzle(save)}
-                    className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 flex flex-col"
+                    className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
                   >
                     <div className="relative h-40 overflow-hidden bg-surface-variant">
                       <img
@@ -243,14 +262,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         {/* Curated Starter Collection */}
         <section>
           <div className="flex justify-between items-end mb-md">
-            <h2 className="font-headline-lg text-headline-lg text-primary">Curated Masterpieces</h2>
+            <h2 className="font-headline-lg text-headline-lg text-primary font-bold">Curated Masterpieces</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-md">
             {SAMPLE_PUZZLES.map((sample) => (
               <div
                 key={sample.id}
                 onClick={() => onSelectImage(sample.imageSrc, sample.title, sample.pieceCount)}
-                className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 flex flex-col"
+                className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
               >
                 <div className="relative h-44 overflow-hidden bg-surface-variant">
                   <img
@@ -271,7 +290,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       {sample.description}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between mt-sm pt-sm border-t border-outline-variant/20">
+                  <div className="flex items-center justify-between mt-sm pt-sm border-t border-outline-variant/20 dark:border-transparent">
                     <span className="font-label-sm text-label-sm text-on-surface-variant">
                       Default: {sample.pieceCount} pcs
                     </span>
@@ -289,14 +308,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         {completedSaves.length > 0 && (
           <section>
             <div className="flex justify-between items-end mb-md">
-              <h2 className="font-headline-lg text-headline-lg text-primary">Completed Gallery</h2>
+              <h2 className="font-headline-lg text-headline-lg text-primary font-bold">Completed Gallery</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-sm">
               {completedSaves.map((completed) => (
                 <div
                   key={completed.id}
                   onClick={() => setInspectImage(completed)}
-                  className="aspect-square bg-surface-variant rounded-lg overflow-hidden relative group cursor-pointer border border-outline-variant/20 shadow-sm"
+                  className="aspect-square bg-surface-variant rounded-lg overflow-hidden relative group cursor-pointer border border-outline-variant/20 dark:border-transparent shadow-sm"
                 >
                   <img
                     alt={completed.title}
@@ -325,7 +344,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface-container rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-outline-variant/30 animate-in fade-in zoom-in-95 duration-200"
+            className="bg-surface-container rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-outline-variant/30 dark:border-transparent animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="relative aspect-video w-full bg-black">
               <img

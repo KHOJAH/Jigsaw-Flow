@@ -45,7 +45,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }
 
   const handleReset = () => {
-    const def = {
+    const def: UserSettings = {
+      theme: 'light',
       musicVolume: 40,
       sfxVolume: 85,
       snapSensitivity: 'medium' as SnapSensitivity,
@@ -68,7 +69,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <div className="max-w-4xl mx-auto space-y-xl pb-24">
         {/* Header */}
         <div className="flex flex-col gap-xs">
-          <h1 className="font-display-lg text-display-lg text-primary">Preferences</h1>
+          <h1 className="font-display-lg text-display-lg text-primary font-bold">Preferences</h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
             Customize your puzzling environment. Adjust tactile feedback, audio cues, and visual
             rendering to suit your focus style.
@@ -77,9 +78,83 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Bento Grid Settings */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-lg">
+          {/* Theme & Visual Appearance (Spans 12 cols) */}
+          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm">
+            <div className="flex items-center gap-sm mb-lg border-b border-surface-variant dark:border-transparent pb-sm">
+              <span className="material-symbols-outlined text-primary">palette</span>
+              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                Theme & Appearance
+              </h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md">
+              <div>
+                <h4 className="font-body-md font-semibold text-on-surface">Interface Theme</h4>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  Select between light mode, deep botanical velvet dark mode, or follow system.
+                </p>
+              </div>
+
+              {/* 3-way Segmented Button */}
+              <div className="flex bg-surface-variant/80 dark:bg-black/30 rounded-xl p-1 gap-1 border border-outline-variant/40 dark:border-transparent shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...localSettings, theme: 'light' as const }
+                    setLocalSettings(next)
+                    onSaveSettings(next)
+                    StorageService.saveSettings(next)
+                  }}
+                  className={`flex items-center gap-1.5 px-md py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    localSettings.theme === 'light'
+                      ? 'bg-primary text-on-primary shadow-xs font-bold'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">light_mode</span>
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...localSettings, theme: 'dark' as const }
+                    setLocalSettings(next)
+                    onSaveSettings(next)
+                    StorageService.saveSettings(next)
+                  }}
+                  className={`flex items-center gap-1.5 px-md py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    localSettings.theme === 'dark'
+                      ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs font-bold'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">dark_mode</span>
+                  <span>Dark (Deep Velvet)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...localSettings, theme: 'system' as const }
+                    setLocalSettings(next)
+                    onSaveSettings(next)
+                    StorageService.saveSettings(next)
+                  }}
+                  className={`flex items-center gap-1.5 px-md py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    localSettings.theme === 'system'
+                      ? 'bg-primary text-on-primary shadow-xs font-bold'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">settings_brightness</span>
+                  <span>System</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
           {/* Audio Settings (Spans 8 cols) */}
-          <section className="md:col-span-8 bg-surface-container border border-outline-variant/30 rounded-2xl p-lg shadow-sm">
-            <div className="flex items-center justify-between mb-lg border-b border-surface-variant pb-sm">
+          <section className="md:col-span-8 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm">
+            <div className="flex items-center justify-between mb-lg border-b border-surface-variant dark:border-transparent pb-sm">
               <div className="flex items-center gap-sm">
                 <span className="material-symbols-outlined text-primary">volume_up</span>
                 <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
@@ -145,8 +220,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </section>
 
           {/* Controls & Handling (Spans 4 cols) */}
-          <section className="md:col-span-4 bg-surface-container border border-outline-variant/30 rounded-2xl p-lg shadow-sm flex flex-col">
-            <div className="flex items-center gap-sm mb-lg border-b border-surface-variant pb-sm">
+          <section className="md:col-span-4 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm flex flex-col">
+            <div className="flex items-center gap-sm mb-lg border-b border-surface-variant dark:border-transparent pb-sm">
               <span className="material-symbols-outlined text-primary">mouse</span>
               <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
                 Handling
@@ -158,14 +233,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label className="font-body-md text-body-md font-medium text-on-surface block mb-sm">
                   Snap Sensitivity
                 </label>
-                <div className="grid grid-cols-3 gap-1 bg-surface-container-low rounded-lg p-1 border border-outline-variant/30">
+                <div className="grid grid-cols-3 gap-1 bg-surface-container-low dark:bg-black/30 rounded-lg p-1 border border-outline-variant/30 dark:border-transparent">
                   {(['low', 'medium', 'high'] as SnapSensitivity[]).map((sens) => (
                     <button
                       key={sens}
                       onClick={() => setLocalSettings({ ...localSettings, snapSensitivity: sens })}
                       className={`py-1 text-center font-label-md text-xs font-semibold rounded-md transition-all uppercase cursor-pointer ${
                         localSettings.snapSensitivity === sens
-                          ? 'bg-primary text-on-primary shadow-sm'
+                          ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-sm'
                           : 'text-on-surface-variant hover:bg-surface-variant'
                       }`}
                     >
@@ -225,8 +300,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </section>
 
           {/* Visuals & Board Surfaces (Spans 12 cols) */}
-          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 rounded-2xl p-lg shadow-sm">
-            <div className="flex items-center gap-sm mb-lg border-b border-surface-variant pb-sm">
+          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm">
+            <div className="flex items-center gap-sm mb-lg border-b border-surface-variant dark:border-transparent pb-sm">
               <span className="material-symbols-outlined text-primary">wallpaper</span>
               <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
                 Visuals & Board Surfaces
@@ -246,7 +321,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="cursor-pointer group text-center"
                   >
                     <div
-                      className={`h-20 rounded-xl bg-[#f7eae0] shadow-sm mb-xs relative overflow-hidden transition-all border-2 ${
+                      className={`h-20 rounded-xl bg-[#f7eae0] dark:bg-[#15191f] shadow-sm mb-xs relative overflow-hidden transition-all border-2 ${
                         localSettings.tableSurface === 'felt'
                           ? 'border-primary ring-2 ring-primary/30'
                           : 'border-transparent hover:border-outline-variant'
@@ -378,8 +453,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </section>
 
           {/* Storage & Backup Management (Spans 12 cols) */}
-          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 rounded-2xl p-lg shadow-sm">
-            <div className="flex items-center gap-sm mb-md border-b border-surface-variant pb-sm">
+          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm">
+            <div className="flex items-center gap-sm mb-md border-b border-surface-variant dark:border-transparent pb-sm">
               <span className="material-symbols-outlined text-primary">folder_zip</span>
               <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
                 Local Save & Backup Management
@@ -392,14 +467,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex gap-sm">
                 <button
                   onClick={onImportSave}
-                  className="px-md py-sm bg-surface hover:bg-surface-variant text-on-surface font-semibold text-xs rounded-xl border border-outline-variant/40 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-md py-sm bg-surface hover:bg-surface-variant text-on-surface font-semibold text-xs rounded-xl border border-outline-variant/40 dark:border-transparent transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">upload_file</span>
                   <span>Import Save</span>
                 </button>
                 <button
                   onClick={onExportSave}
-                  className="px-md py-sm bg-surface hover:bg-surface-variant text-on-surface font-semibold text-xs rounded-xl border border-outline-variant/40 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-md py-sm bg-surface hover:bg-surface-variant text-on-surface font-semibold text-xs rounded-xl border border-outline-variant/40 dark:border-transparent transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">download</span>
                   <span>Export Save</span>

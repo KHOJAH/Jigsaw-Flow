@@ -79,7 +79,10 @@ export interface PuzzleSave {
   completedAt?: string
 }
 
+export type ThemePreference = 'light' | 'dark' | 'system'
+
 export interface UserSettings {
+  theme: ThemePreference
   musicVolume: number // 0 - 100
   sfxVolume: number   // 0 - 100
   snapSensitivity: SnapSensitivity

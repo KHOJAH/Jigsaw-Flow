@@ -73,7 +73,7 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-lg shadow-2xl max-w-sm w-full backdrop-blur-xl flex flex-col items-center gap-md animate-in zoom-in-95 duration-200 relative text-on-surface"
+        className="bg-surface-container/95 border border-outline-variant/50 dark:border-transparent rounded-3xl p-lg shadow-2xl max-w-sm w-full backdrop-blur-xl flex flex-col items-center gap-md animate-in zoom-in-95 duration-200 relative text-on-surface"
       >
         {/* Close Button */}
         <button
@@ -96,7 +96,7 @@ export const PieceInspectModal: React.FC<PieceInspectModalProps> = ({
         </div>
 
         {/* Large Crisp Piece Silhouette Canvas Preview */}
-        <div className="w-48 h-48 bg-surface-container-lowest/80 rounded-2xl border border-outline-variant/40 flex items-center justify-center p-md shadow-inner relative group">
+        <div className="w-48 h-48 bg-surface-container-lowest/80 dark:bg-[#12161c] rounded-2xl border border-outline-variant/40 dark:border-transparent flex items-center justify-center p-md shadow-inner relative group">
           <div
             className="w-full h-full flex items-center justify-center transition-transform duration-300"
             style={{ transform: `rotate(${piece.rotation}deg)` }}

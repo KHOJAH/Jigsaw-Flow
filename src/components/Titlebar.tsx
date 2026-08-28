@@ -2,9 +2,15 @@ import React, { useEffect, useState } from 'react'
 
 interface TitlebarProps {
   currentPuzzleTitle?: string
+  theme?: string
+  onToggleTheme?: () => void
 }
 
-export const Titlebar: React.FC<TitlebarProps> = ({ currentPuzzleTitle }) => {
+export const Titlebar: React.FC<TitlebarProps> = ({
+  currentPuzzleTitle,
+  theme,
+  onToggleTheme,
+}) => {
   const [isMaximized, setIsMaximized] = useState(false)
   const isElectron = !!window.electronAPI
 
@@ -30,7 +36,7 @@ export const Titlebar: React.FC<TitlebarProps> = ({ currentPuzzleTitle }) => {
 
   return (
     <header
-      className="h-8 bg-surface-container border-b border-outline-variant/30 flex items-center justify-between px-3 select-none flex-shrink-0 z-50 text-on-surface"
+      className="h-8 bg-surface-container border-b border-outline-variant/30 dark:border-transparent flex items-center justify-between px-3 select-none flex-shrink-0 z-50 text-on-surface"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* App Branding & Window Title */}
@@ -47,11 +53,22 @@ export const Titlebar: React.FC<TitlebarProps> = ({ currentPuzzleTitle }) => {
         )}
       </div>
 
-      {/* Desktop Window Controls */}
+      {/* Desktop Window Controls & Quick Theme Toggle */}
       <div
         className="flex items-center gap-1"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-primary transition-colors cursor-pointer mr-1"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            <span className="material-symbols-outlined text-sm">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+        )}
         <button
           onClick={handleMinimize}
           className="w-7 h-6 flex items-center justify-center hover:bg-surface-variant rounded text-on-surface-variant hover:text-on-surface transition-colors"

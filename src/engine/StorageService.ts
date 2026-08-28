@@ -4,6 +4,7 @@ const LOCAL_STORAGE_SAVES_KEY = 'jigsaw_flow_saves'
 const LOCAL_STORAGE_SETTINGS_KEY = 'jigsaw_flow_settings'
 
 export const DEFAULT_SETTINGS: UserSettings = {
+  theme: 'light',
   musicVolume: 40,
   sfxVolume: 85,
   snapSensitivity: 'medium',

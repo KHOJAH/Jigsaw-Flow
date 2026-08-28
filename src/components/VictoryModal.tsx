@@ -85,7 +85,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-md select-none overflow-hidden animate-in fade-in duration-300">
-      <div className="bg-surface-container rounded-3xl max-w-2xl w-full p-lg md:p-xl shadow-2xl border border-outline-variant/30 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-container rounded-3xl max-w-2xl w-full p-lg md:p-xl shadow-2xl border border-outline-variant/30 dark:border-transparent flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
         {/* Celebration Trophy Icon */}
         <div className="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-sm shadow-md">
           <span
@@ -104,14 +104,14 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </p>
 
         {/* Clean Pristine Image Reveal */}
-        <div className="w-full max-h-56 aspect-video rounded-2xl overflow-hidden shadow-xl border-4 border-surface mb-lg bg-black relative group">
+        <div className="w-full max-h-56 aspect-video rounded-2xl overflow-hidden shadow-xl border-4 border-surface dark:border-transparent mb-lg bg-black relative group">
           <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         </div>
 
         {/* Game Stats Bento Grid */}
         <div className="grid grid-cols-3 gap-md w-full mb-xl">
-          <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col items-center">
+          <div className="bg-surface-container-lowest dark:bg-[#12161c] p-md rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-sm flex flex-col items-center">
             <span className="material-symbols-outlined text-primary text-xl mb-1">timer</span>
             <div className="font-label-sm text-xs text-on-surface-variant">Solve Time</div>
             <div className="font-headline-md text-base md:text-lg text-on-surface font-bold mt-0.5">
@@ -119,7 +119,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col items-center">
+          <div className="bg-surface-container-lowest dark:bg-[#12161c] p-md rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-sm flex flex-col items-center">
             <span className="material-symbols-outlined text-primary text-xl mb-1">
               ads_click
             </span>
@@ -129,7 +129,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col items-center">
+          <div className="bg-surface-container-lowest dark:bg-[#12161c] p-md rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-sm flex flex-col items-center">
             <span className="material-symbols-outlined text-primary text-xl mb-1">
               verified
             </span>
@@ -144,7 +144,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm w-full">
           <button
             onClick={onRestartFresh}
-            className="py-sm px-md rounded-xl bg-surface hover:bg-surface-variant text-on-surface font-semibold text-sm border border-outline-variant/40 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="py-sm px-md rounded-xl bg-surface hover:bg-surface-variant text-on-surface font-semibold text-sm border border-outline-variant/40 dark:border-transparent transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             title="Play same puzzle again from the beginning"
           >
             <span className="material-symbols-outlined text-lg">restart_alt</span>

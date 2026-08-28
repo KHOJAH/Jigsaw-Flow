@@ -217,9 +217,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-md overflow-hidden select-none">
-      <div className="bg-surface-container rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-outline-variant/30 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-surface-container rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-outline-variant/30 dark:border-transparent overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Modal Header */}
-        <div className="flex justify-between items-center px-lg py-md border-b border-outline-variant/20 bg-surface-container-high">
+        <div className="flex justify-between items-center px-lg py-md border-b border-outline-variant/20 dark:border-transparent bg-surface-container-high">
           <div className="flex items-center gap-sm">
             <span className="material-symbols-outlined text-primary text-2xl">crop</span>
             <h2 className="font-headline-lg text-xl text-primary font-bold">
@@ -381,7 +381,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
               {/* Fine-Tuning Crop Position Slider */}
               {canPanHorizontally && (
-                <div className="bg-surface-container-lowest p-sm rounded-xl border border-outline-variant/30 flex items-center gap-sm text-xs">
+                <div className="bg-surface-container-lowest p-sm rounded-xl border border-outline-variant/30 dark:border-transparent flex items-center gap-sm text-xs">
                   <span className="text-on-surface-variant font-semibold whitespace-nowrap">
                     Crop X:
                   </span>
@@ -406,7 +406,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               )}
 
               {canPanVertically && (
-                <div className="bg-surface-container-lowest p-sm rounded-xl border border-outline-variant/30 flex items-center gap-sm text-xs">
+                <div className="bg-surface-container-lowest p-sm rounded-xl border border-outline-variant/30 dark:border-transparent flex items-center gap-sm text-xs">
                   <span className="text-on-surface-variant font-semibold whitespace-nowrap">
                     Crop Y:
                   </span>
@@ -445,12 +445,12 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter a puzzle title..."
-                  className="w-full px-md py-sm rounded-lg bg-surface border border-outline-variant/50 text-on-surface focus:outline-none focus:border-primary font-medium text-sm"
+                  className="w-full px-md py-sm rounded-lg bg-surface border border-outline-variant/50 dark:border-transparent text-on-surface focus:outline-none focus:border-primary font-medium text-sm"
                 />
               </div>
 
               {/* Piece Count Slider with x1, x2, x3 Difficulty Multipliers */}
-              <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30">
+              <div className="bg-surface-container-lowest p-md rounded-xl border border-outline-variant/30 dark:border-transparent">
                 <div className="flex justify-between items-center mb-xs">
                   <div>
                     <label className="font-label-md text-label-md text-on-surface font-semibold block">
@@ -511,7 +511,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               </div>
 
               {/* Piece Rotation Toggle */}
-              <div className="flex items-center justify-between p-md bg-surface-container-lowest rounded-xl border border-outline-variant/30">
+              <div className="flex items-center justify-between p-md bg-surface-container-lowest rounded-xl border border-outline-variant/30 dark:border-transparent">
                 <div>
                   <div className="font-label-md text-label-md text-on-surface font-semibold">
                     Piece Rotation

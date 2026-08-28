@@ -67,7 +67,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
       {/* Top Floating Header & Status Bar */}
       <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none select-none">
         {/* Left: Back to Library & Title */}
-        <div className="flex items-center gap-sm pointer-events-auto bg-surface-container/90 backdrop-blur-md px-md py-sm rounded-xl border border-outline-variant/30 shadow-lg">
+        <div className="flex items-center gap-sm pointer-events-auto bg-surface-container/90 backdrop-blur-md px-md py-sm rounded-xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
           <button
             onClick={onSaveAndExit}
             className="w-8 h-8 rounded-lg hover:bg-surface-variant flex items-center justify-center text-primary transition-colors cursor-pointer"
@@ -86,13 +86,13 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
         </div>
 
         {/* Center: Live Timer & DSU Progress Badge */}
-        <div className="hidden sm:flex items-center gap-md pointer-events-auto bg-surface-container/90 backdrop-blur-md px-lg py-sm rounded-xl border border-outline-variant/30 shadow-lg">
+        <div className="hidden sm:flex items-center gap-md pointer-events-auto bg-surface-container/90 backdrop-blur-md px-lg py-sm rounded-xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
           <div className="flex items-center gap-1.5 text-primary font-bold text-sm">
             <span className="material-symbols-outlined text-base">timer</span>
             <span className="font-mono text-sm tracking-wider">{formatTimer(elapsedTime)}</span>
           </div>
 
-          <div className="h-4 w-px bg-outline-variant/40" />
+          <div className="h-4 w-px bg-outline-variant/40 dark:bg-white/10" />
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-on-surface-variant">
@@ -105,7 +105,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
         </div>
 
         {/* Right: Utility Tool Controls */}
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-surface-container/90 backdrop-blur-md p-1 rounded-xl border border-outline-variant/30 shadow-lg">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-surface-container/90 backdrop-blur-md p-1 rounded-xl border border-outline-variant/30 dark:border-transparent shadow-lg dark:shadow-2xl">
           {/* Auto Complete Action Button */}
           {settings.allowAutoComplete && onAutoComplete && (
             <button
@@ -179,6 +179,20 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="material-symbols-outlined text-lg">lightbulb</span>
             </button>
           )}
+
+          {/* Theme Quick Toggle Button */}
+          <button
+            onClick={() => {
+              const next = settings.theme === 'dark' ? 'light' : 'dark'
+              onUpdateSettings({ theme: next })
+            }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-all cursor-pointer active:scale-95"
+            title={settings.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            <span className="material-symbols-outlined text-lg text-primary">
+              {settings.theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
 
           {/* Zoom Controls */}
           <div className="h-5 w-px bg-outline-variant/40 mx-0.5" />

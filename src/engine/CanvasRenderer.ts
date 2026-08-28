@@ -372,7 +372,7 @@ export class CanvasRenderer {
   }
 
   /**
-   * Renders the board boundary guidelines and optional ghost image overlay
+   * Renders the board mat frame, drop shadow, and ghost image overlay
    */
   private renderBoardFrame(
     ctx: CanvasRenderingContext2D,
@@ -380,17 +380,19 @@ export class CanvasRenderer {
     boardHeight: number,
     settings: UserSettings
   ): void {
+    const isDark = document.documentElement.classList.contains('dark')
+
     // Board shadow and background fill
     ctx.save()
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
-    ctx.shadowBlur = 14
+    ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.45)'
+    ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)'
+    ctx.shadowBlur = isDark ? 20 : 14
     ctx.shadowOffsetY = 6
     ctx.fillRect(0, 0, boardWidth, boardHeight)
     ctx.restore()
 
     // Board Border Guidelines
-    ctx.strokeStyle = 'rgba(113, 121, 115, 0.45)'
+    ctx.strokeStyle = isDark ? 'rgba(52, 211, 153, 0.3)' : 'rgba(113, 121, 115, 0.45)'
     ctx.lineWidth = 2
     ctx.setLineDash([8, 8])
     ctx.strokeRect(0, 0, boardWidth, boardHeight)
@@ -414,19 +416,21 @@ export class CanvasRenderer {
     height: number,
     surface: TableSurface
   ): void {
+    const isDark = document.documentElement.classList.contains('dark')
+
     switch (surface) {
       case 'felt':
-        ctx.fillStyle = '#f7eae0' // Soft warm linen cream
+        ctx.fillStyle = isDark ? '#13161a' : '#f7eae0' // Soft Deep Studio Charcoal Felt or Soft Linen Cream
         ctx.fillRect(0, 0, width, height)
         break
       case 'walnut':
-        ctx.fillStyle = '#362f29' // Deep dark walnut
+        ctx.fillStyle = isDark ? '#181512' : '#362f29' // Deep Walnut
         ctx.fillRect(0, 0, width, height)
         break
       case 'cutting-mat':
-        ctx.fillStyle = '#143124' // Dark green cutting mat
+        ctx.fillStyle = isDark ? '#0c1a14' : '#143124' // Dark Green Mat
         ctx.fillRect(0, 0, width, height)
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)'
+        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.07)'
         ctx.lineWidth = 1
         const step = 40
         ctx.beginPath()
@@ -441,7 +445,7 @@ export class CanvasRenderer {
         ctx.stroke()
         break
       case 'slate':
-        ctx.fillStyle = '#26292b' // Slate stone
+        ctx.fillStyle = isDark ? '#16191f' : '#26292b' // Obsidian Slate
         ctx.fillRect(0, 0, width, height)
         break
     }

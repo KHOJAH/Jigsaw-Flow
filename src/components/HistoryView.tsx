@@ -44,12 +44,12 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           </div>
 
           {/* Filter Pills */}
-          <div className="flex bg-surface-container rounded-xl p-1 border border-outline-variant/30 self-start">
+          <div className="flex bg-surface-container rounded-xl p-1 border border-outline-variant/30 dark:border-transparent shadow-inner self-start">
             <button
               onClick={() => setFilter('all')}
               className={`px-md py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'all'
-                  ? 'bg-primary text-on-primary shadow-sm'
+                  ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-sm'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -59,7 +59,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               onClick={() => setFilter('completed')}
               className={`px-md py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'completed'
-                  ? 'bg-primary text-on-primary shadow-sm'
+                  ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-sm'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -69,7 +69,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               onClick={() => setFilter('in-progress')}
               className={`px-md py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'in-progress'
-                  ? 'bg-primary text-on-primary shadow-sm'
+                  ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-sm'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -80,7 +80,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
         {/* Aggregate Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-          <div className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 shadow-sm flex items-center gap-md">
+          <div className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 dark:border-transparent shadow-sm flex items-center gap-md">
             <div className="w-12 h-12 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0">
               <span className="material-symbols-outlined text-2xl">emoji_events</span>
             </div>
@@ -94,7 +94,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             </div>
           </div>
 
-          <div className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 shadow-sm flex items-center gap-md">
+          <div className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 dark:border-transparent shadow-sm flex items-center gap-md">
             <div className="w-12 h-12 rounded-xl bg-tertiary-container text-on-tertiary-container flex items-center justify-center flex-shrink-0">
               <span className="material-symbols-outlined text-2xl">timelapse</span>
             </div>
@@ -108,7 +108,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             </div>
           </div>
 
-          <div className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 shadow-sm flex items-center gap-md">
+          <div className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 dark:border-transparent shadow-sm flex items-center gap-md">
             <div className="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center flex-shrink-0">
               <span className="material-symbols-outlined text-2xl">extension</span>
             </div>
@@ -125,7 +125,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
         {/* Saves List */}
         {filteredSaves.length === 0 ? (
-          <div className="bg-surface-container rounded-2xl p-xl border border-outline-variant/30 text-center text-on-surface-variant">
+          <div className="bg-surface-container rounded-2xl p-xl border border-outline-variant/30 dark:border-transparent text-center text-on-surface-variant">
             <span className="material-symbols-outlined text-4xl mb-sm text-outline-variant">
               inbox
             </span>
@@ -140,9 +140,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               return (
                 <div
                   key={save.id}
-                  className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 shadow-sm hover:shadow-md transition-all flex gap-md"
+                  className="bg-surface-container rounded-2xl p-md border border-outline-variant/30 dark:border-transparent shadow-sm hover:shadow-md transition-all flex gap-md"
                 >
-                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-surface-variant flex-shrink-0 border border-outline-variant/20 relative">
+                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-surface-variant flex-shrink-0 border border-outline-variant/20 dark:border-transparent relative">
                     <img
                       src={save.thumbnailUrl || save.imageSrc}
                       alt={save.title}

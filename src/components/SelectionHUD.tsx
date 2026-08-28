@@ -20,9 +20,9 @@ export const SelectionHUD: React.FC<SelectionHUDProps> = ({
   if (selectedCount === 0) return null
 
   return (
-    <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 bg-surface-container/95 backdrop-blur-md px-md py-sm rounded-2xl border border-primary/30 shadow-2xl flex items-center gap-sm animate-in fade-in slide-in-from-bottom-3 duration-200 select-none pointer-events-auto">
+    <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 bg-surface-container/95 backdrop-blur-md px-md py-sm rounded-2xl border border-primary/30 dark:border-transparent shadow-2xl flex items-center gap-sm animate-in fade-in slide-in-from-bottom-3 duration-200 select-none pointer-events-auto">
       {/* Selection Count Badge */}
-      <div className="flex items-center gap-1.5 px-sm py-1 bg-primary text-on-primary rounded-xl font-bold text-xs shadow-sm">
+      <div className="flex items-center gap-1.5 px-sm py-1 bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 rounded-xl font-bold text-xs shadow-sm">
         <span className="material-symbols-outlined text-sm">select_all</span>
         <span>{selectedCount} Selected</span>
       </div>

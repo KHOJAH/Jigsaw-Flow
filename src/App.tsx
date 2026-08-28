@@ -22,7 +22,20 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveNavTab>('library')
   const [saves, setSaves] = useState<PuzzleSave[]>([])
   const [activePuzzle, setActivePuzzle] = useState<PuzzleSave | null>(null)
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    const loaded = StorageService.loadSettings()
+    if (
+      loaded.theme === 'dark' ||
+      (loaded.theme === 'system' &&
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+    return loaded
+  })
 
   // Modals state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
@@ -37,11 +50,9 @@ export const App: React.FC = () => {
     accuracy: number
   }>({ solveTime: 0, moves: 0, accuracy: 100 })
 
-  // Load saved puzzles and preferences on mount
+  // Load saved puzzles and set audio on mount
   useEffect(() => {
-    const loadedSettings = StorageService.loadSettings()
-    setSettings(loadedSettings)
-    audioEngine.setVolumes(loadedSettings.sfxVolume, loadedSettings.musicVolume)
+    audioEngine.setVolumes(settings.sfxVolume, settings.musicVolume)
 
     StorageService.loadSaves().then((loadedSaves) => {
       setSaves(loadedSaves)
@@ -52,6 +63,54 @@ export const App: React.FC = () => {
       }
     })
   }, [])
+
+  // Sync Dark/Light theme class with root HTML element
+  useEffect(() => {
+    const root = document.documentElement
+    const applyDark = (isDark: boolean) => {
+      if (isDark) {
+        root.classList.add('dark')
+      } else {
+        root.classList.remove('dark')
+      }
+    }
+
+    if (settings.theme === 'dark') {
+      applyDark(true)
+    } else if (settings.theme === 'light') {
+      applyDark(false)
+    } else {
+      const media = window.matchMedia('(prefers-color-scheme: dark)')
+      applyDark(media.matches)
+      const listener = (e: MediaQueryListEvent) => applyDark(e.matches)
+      media.addEventListener('change', listener)
+      return () => media.removeEventListener('change', listener)
+    }
+  }, [settings.theme])
+
+  // Universal settings updater with persistence
+  const handleUpdateSettings = useCallback((newSettings: Partial<UserSettings>) => {
+    setSettings((prev) => {
+      const updated: UserSettings = { ...prev, ...newSettings }
+      StorageService.saveSettings(updated)
+      if (
+        updated.theme === 'dark' ||
+        (updated.theme === 'system' &&
+          window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+      return updated
+    })
+  }, [])
+
+  // Quick 1-Click Theme Toggle
+  const handleToggleTheme = useCallback(() => {
+    const nextTheme = settings.theme === 'dark' ? 'light' : 'dark'
+    handleUpdateSettings({ theme: nextTheme })
+  }, [settings.theme, handleUpdateSettings])
 
   // Manage ambient audio on workspace entry/exit
   useEffect(() => {
@@ -302,7 +361,11 @@ export const App: React.FC = () => {
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-background text-on-background">
       {/* Frameless Desktop Titlebar */}
-      <Titlebar currentPuzzleTitle={activePuzzle?.title} />
+      <Titlebar
+        currentPuzzleTitle={activePuzzle?.title}
+        theme={settings.theme}
+        onToggleTheme={handleToggleTheme}
+      />
 
       {/* Main App Layout */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -313,6 +376,8 @@ export const App: React.FC = () => {
           onOpenImport={handleOpenBrowseFiles}
           hasActivePuzzle={activePuzzle !== null}
           completedCount={completedSaves.length}
+          theme={settings.theme}
+          onToggleTheme={handleToggleTheme}
         />
 
         {/* View Switcher */}
@@ -322,6 +387,8 @@ export const App: React.FC = () => {
               recentSaves={recentSaves}
               completedSaves={completedSaves}
               activePuzzle={activePuzzle}
+              theme={settings.theme}
+              onToggleTheme={handleToggleTheme}
               onResumePuzzle={handleResumePuzzle}
               onReplayPuzzle={handleRestartPuzzle}
               onDeleteSave={handleDeleteSave}
@@ -337,9 +404,7 @@ export const App: React.FC = () => {
                 puzzle={activePuzzle}
                 settings={settings}
                 onUpdatePuzzle={handleUpdatePuzzle}
-                onUpdateSettings={(newSettings) =>
-                  setSettings((prev) => ({ ...prev, ...newSettings }))
-                }
+                onUpdateSettings={handleUpdateSettings}
                 onVictory={handleVictory}
                 onBackToLibrary={() => {
                   setActivePuzzle(null)
@@ -379,7 +444,7 @@ export const App: React.FC = () => {
           {activeTab === 'settings' && (
             <SettingsModal
               settings={settings}
-              onSaveSettings={setSettings}
+              onSaveSettings={handleUpdateSettings}
               onExportSave={handleExportSave}
               onImportSave={handleImportSave}
               onClearCache={handleClearCache}
