@@ -106,8 +106,8 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 select-none">
       <div className="max-w-5xl mx-auto px-md">
-        {/* Tray Toggle Tab & Toolbar (Always Visible & Docked) */}
-        <div className="bg-surface-container border border-b-0 border-outline-variant/40 rounded-t-2xl shadow-xl backdrop-blur-md px-md py-sm flex items-center justify-between transition-colors">
+        {/* Tray Toggle Tab & Toolbar (Elevated Floating Dock with Deep Pop Shadow) */}
+        <div className="bg-surface-container/95 border-t border-x border-outline-variant/60 rounded-t-3xl shadow-[0_-12px_36px_rgba(0,0,0,0.14)] backdrop-blur-xl px-md py-sm flex items-center justify-between transition-colors">
           <div className="flex items-center gap-sm">
             <button
               onClick={onToggleOpen}
@@ -118,18 +118,18 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                 {isOpen ? 'expand_more' : 'expand_less'}
               </span>
               <span>Piece Tray</span>
-              <span className="bg-primary-container text-on-primary-container text-xs px-2 py-0.5 rounded-full font-semibold">
+              <span className="bg-primary text-on-primary text-xs px-2.5 py-0.5 rounded-full font-bold shadow-xs">
                 {trayPieces.length}
               </span>
             </button>
 
             {/* 4 Categorized Filter Tabs */}
-            <div className="flex bg-surface-variant/70 rounded-lg p-0.5 ml-md gap-0.5 text-xs font-semibold">
+            <div className="flex bg-surface-variant/80 rounded-xl p-0.5 ml-md gap-0.5 text-xs font-semibold border border-outline-variant/40 shadow-inner">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                className={`px-sm py-1 rounded-lg transition-all cursor-pointer ${
                   filter === 'all'
-                    ? 'bg-primary text-on-primary shadow-xs'
+                    ? 'bg-primary text-on-primary shadow-sm font-bold'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -137,9 +137,9 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
               </button>
               <button
                 onClick={() => setFilter('corners')}
-                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                className={`px-sm py-1 rounded-lg transition-all cursor-pointer ${
                   filter === 'corners'
-                    ? 'bg-primary text-on-primary shadow-xs'
+                    ? 'bg-primary text-on-primary shadow-sm font-bold'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -147,9 +147,9 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
               </button>
               <button
                 onClick={() => setFilter('edges')}
-                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                className={`px-sm py-1 rounded-lg transition-all cursor-pointer ${
                   filter === 'edges'
-                    ? 'bg-primary text-on-primary shadow-xs'
+                    ? 'bg-primary text-on-primary shadow-sm font-bold'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -157,9 +157,9 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
               </button>
               <button
                 onClick={() => setFilter('centers')}
-                className={`px-sm py-1 rounded-md transition-all cursor-pointer ${
+                className={`px-sm py-1 rounded-lg transition-all cursor-pointer ${
                   filter === 'centers'
-                    ? 'bg-primary text-on-primary shadow-xs'
+                    ? 'bg-primary text-on-primary shadow-sm font-bold'
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -172,7 +172,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
           <div className="flex items-center gap-xs">
             <button
               onClick={() => onScatterTab(filter)}
-              className="px-sm py-1 text-xs font-semibold rounded-lg bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/30 transition-all flex items-center gap-1 cursor-pointer"
+              className="px-sm py-1.5 text-xs font-semibold rounded-xl bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/50 shadow-xs hover:shadow transition-all flex items-center gap-1 cursor-pointer active:scale-95"
               title={`Pop all ${getTabLabel()} pieces neatly onto the table perimeter`}
             >
               <span className="material-symbols-outlined text-sm">grid_view</span>
@@ -180,7 +180,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
             </button>
             <button
               onClick={() => onTidyTab(filter)}
-              className="px-sm py-1 text-xs font-semibold rounded-lg bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/30 transition-all flex items-center gap-1 cursor-pointer"
+              className="px-sm py-1.5 text-xs font-semibold rounded-xl bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/50 shadow-xs hover:shadow transition-all flex items-center gap-1 cursor-pointer active:scale-95"
               title={`Return loose ${getTabLabel()} pieces back to tray`}
             >
               <span className="material-symbols-outlined text-sm">inventory_2</span>
@@ -189,9 +189,9 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
           </div>
         </div>
 
-        {/* Tray Scrollable Content Area with Smooth Slide-Down Animation */}
+        {/* Tray Scrollable Content Area (Elevated Drawer with Deep Ambient Shadow) */}
         <div
-          className={`bg-surface-container-high/95 border border-outline-variant/40 shadow-2xl overflow-x-auto overflow-y-hidden backdrop-blur-md transition-all duration-300 ease-in-out ${
+          className={`bg-surface-container-high/98 border-x border-b border-outline-variant/60 shadow-[0_-20px_50px_rgba(0,0,0,0.18)] overflow-x-auto overflow-y-hidden backdrop-blur-xl transition-all duration-300 ease-in-out ${
             isOpen
               ? 'max-h-60 opacity-100 p-md'
               : 'max-h-0 opacity-0 p-0 border-t-0 pointer-events-none'
@@ -217,55 +217,55 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                       e.stopPropagation()
                       onInspectPiece(piece)
                     }}
-                    className={`w-[96px] h-[96px] rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none shadow-sm ${
+                    className={`w-[96px] h-[96px] rounded-2xl border transition-all cursor-grab active:cursor-grabbing flex flex-col items-center justify-center relative p-1.5 group flex-shrink-0 select-none touch-none ${
                       isHinted
                         ? 'border-primary ring-4 ring-primary/80 bg-primary-container/40 shadow-2xl scale-110 animate-pulse z-20'
-                        : 'bg-surface-container-lowest/60 hover:bg-surface-container-lowest/95 border-outline-variant/40 hover:border-primary/80 shadow-inner hover:shadow-lg hover:-translate-y-1'
+                        : 'bg-surface-container-lowest border-outline-variant/60 hover:border-primary shadow-md hover:shadow-2xl hover:-translate-y-2 hover:scale-105'
                     }`}
                     title={`Piece #${piece.id + 1} (${
                       piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
                     }) • Drag onto board • Click to pop • Right-click to inspect`}
                   >
-                  {/* Corner / Edge Badge Indicator */}
-                  {piece.isCorner ? (
-                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-tertiary-container/90 text-on-tertiary-container text-[9px] font-bold rounded-md backdrop-blur-sm shadow-xs">
-                      Corner
+                    {/* Corner / Edge Badge Indicator */}
+                    {piece.isCorner ? (
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-tertiary-container text-on-tertiary-container text-[9px] font-bold rounded-md shadow-xs ring-1 ring-tertiary/30">
+                        Corner
+                      </span>
+                    ) : piece.isEdge ? (
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[9px] font-bold rounded-md shadow-xs ring-1 ring-secondary/30">
+                        Edge
+                      </span>
+                    ) : null}
+
+                    {/* Hover Inspect Eye Button */}
+                    <button
+                      onPointerDown={(e) => {
+                        e.stopPropagation()
+                      }}
+                      onPointerUp={(e) => {
+                        e.stopPropagation()
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onInspectPiece(piece)
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-surface-variant/90 hover:bg-primary hover:text-on-primary text-on-surface-variant flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-md z-10 hover:scale-110"
+                      title="Inspect Piece Details"
+                    >
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                    </button>
+
+                    {/* Piece Number Badge */}
+                    <span className="absolute bottom-1 right-1.5 text-[9px] font-bold text-on-surface-variant/60 group-hover:text-primary font-mono">
+                      #{piece.id + 1}
                     </span>
-                  ) : piece.isEdge ? (
-                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-secondary-container/90 text-on-secondary-container text-[9px] font-bold rounded-md backdrop-blur-sm shadow-xs">
-                      Edge
-                    </span>
-                  ) : null}
 
-                  {/* Hover Inspect Eye Button */}
-                  <button
-                    onPointerDown={(e) => {
-                      e.stopPropagation()
-                    }}
-                    onPointerUp={(e) => {
-                      e.stopPropagation()
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      onInspectPiece(piece)
-                    }}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-surface-variant/90 hover:bg-primary hover:text-on-primary text-on-surface-variant flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-sm z-10"
-                    title="Inspect Piece Details"
-                  >
-                    <span className="material-symbols-outlined text-[13px]">visibility</span>
-                  </button>
-
-                  {/* Piece Number Badge */}
-                  <span className="absolute bottom-1 right-1.5 text-[9px] font-semibold text-on-surface-variant/70 group-hover:text-primary">
-                    #{piece.id + 1}
-                  </span>
-
-                  {/* Real Piece Silhouette & Texture Thumbnail */}
-                  <div className="w-full h-full flex items-center justify-center p-1">
-                    <PieceThumbnail piece={piece} getPieceSprite={getPieceSprite} />
+                    {/* Real Piece Silhouette & Texture Thumbnail */}
+                    <div className="w-full h-full flex items-center justify-center p-1">
+                      <PieceThumbnail piece={piece} getPieceSprite={getPieceSprite} />
+                    </div>
                   </div>
-                </div>
                 )
               })}
             </div>
