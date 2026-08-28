@@ -276,6 +276,18 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
                 T
               </kbd>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-on-surface-variant">Multi-Select</span>
+              <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
+                Ctrl + Click / Drag Box
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-on-surface-variant">Send to Tray</span>
+              <kbd className="px-1.5 py-0.5 bg-surface rounded border border-outline-variant/40 font-mono text-[10px]">
+                Backspace
+              </kbd>
+            </div>
           </div>
         </div>
       )}

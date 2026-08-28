@@ -109,7 +109,9 @@ export class CanvasRenderer {
     boardWidth: number,
     boardHeight: number,
     activeClusterId: number | null,
-    settings: UserSettings
+    settings: UserSettings,
+    selectedPieceIds: Set<number> = new Set(),
+    marqueeBox: { x1: number; y1: number; x2: number; y2: number } | null = null
   ): void {
     // -------------------------------------------------------------
     // LAYER 0: Table Surface Background
@@ -165,7 +167,8 @@ export class CanvasRenderer {
       )
       for (const piece of groundedPieces) {
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        this.drawSinglePiece(ctx, piece, settings, 1.0, false, isThisFlashing)
+        const isSelected = selectedPieceIds.has(piece.id)
+        this.drawSinglePiece(ctx, piece, settings, 1.0, false, isThisFlashing, isSelected)
       }
 
       // -------------------------------------------------------------
@@ -180,7 +183,8 @@ export class CanvasRenderer {
       for (const piece of loosePieces) {
         const isClustered = (clusterSizes.get(piece.clusterId) || 0) > 1
         const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        this.drawSinglePiece(ctx, piece, settings, 1.0, !isClustered, isThisFlashing)
+        const isSelected = selectedPieceIds.has(piece.id)
+        this.drawSinglePiece(ctx, piece, settings, 1.0, !isClustered, isThisFlashing, isSelected)
       }
 
       // -------------------------------------------------------------
@@ -197,14 +201,48 @@ export class CanvasRenderer {
         ctx.shadowOffsetY = 16
 
         for (const piece of activePieces) {
-          this.drawSinglePiece(ctx, piece, settings, 1.0, false, false)
+          this.drawSinglePiece(ctx, piece, settings, 1.0, false, false, false)
         }
         ctx.restore()
 
         // Draw active piece sprites on top
         for (const piece of activePieces) {
           const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-          this.drawSinglePiece(ctx, piece, settings, 1.0, true, isThisFlashing)
+          const isSelected = selectedPieceIds.has(piece.id)
+          this.drawSinglePiece(ctx, piece, settings, 1.0, true, isThisFlashing, isSelected)
+        }
+      }
+
+      // -------------------------------------------------------------
+      // LAYER 5: Interactive Marquee Selection Box
+      // -------------------------------------------------------------
+      if (marqueeBox) {
+        const x = Math.min(marqueeBox.x1, marqueeBox.x2)
+        const y = Math.min(marqueeBox.y1, marqueeBox.y2)
+        const w = Math.abs(marqueeBox.x2 - marqueeBox.x1)
+        const h = Math.abs(marqueeBox.y2 - marqueeBox.y1)
+
+        if (w > 2 || h > 2) {
+          ctx.save()
+          ctx.fillStyle = 'rgba(29, 69, 51, 0.12)'
+          ctx.fillRect(x, y, w, h)
+
+          ctx.strokeStyle = '#1d4533'
+          ctx.lineWidth = Math.max(1.0, 1.5 / viewport.scale)
+          ctx.setLineDash([6 / viewport.scale, 4 / viewport.scale])
+          ctx.strokeRect(x, y, w, h)
+          ctx.setLineDash([])
+
+          // Corner accent dots
+          const dotRadius = Math.max(2.5, 3.5 / viewport.scale)
+          ctx.fillStyle = '#1d4533'
+          ctx.beginPath()
+          ctx.arc(x, y, dotRadius, 0, Math.PI * 2)
+          ctx.arc(x + w, y, dotRadius, 0, Math.PI * 2)
+          ctx.arc(x, y + h, dotRadius, 0, Math.PI * 2)
+          ctx.arc(x + w, y + h, dotRadius, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.restore()
         }
       }
     }
@@ -221,7 +259,8 @@ export class CanvasRenderer {
     settings: UserSettings,
     opacity: number,
     drawEdgeHighlight: boolean,
-    isFlashing: boolean = false
+    isFlashing: boolean = false,
+    isSelected: boolean = false
   ): void {
     const sprite = this.sprites.get(piece.id)
     if (!sprite) return
@@ -255,6 +294,20 @@ export class CanvasRenderer {
       ctx.lineWidth = 3
       ctx.shadowColor = '#ffd8c0'
       ctx.shadowBlur = 12
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    // Multi-Selection Golden Halo Highlight
+    if (isSelected) {
+      ctx.save()
+      ctx.translate(-piece.width / 2, -piece.height / 2)
+      ctx.beginPath()
+      JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
+      ctx.strokeStyle = '#f9d2ba'
+      ctx.lineWidth = 3
+      ctx.shadowColor = '#5e3122'
+      ctx.shadowBlur = 10
       ctx.stroke()
       ctx.restore()
     }

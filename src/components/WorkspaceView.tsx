@@ -5,6 +5,7 @@ import { ClusterManager } from '../engine/ClusterManager'
 import { audioEngine } from '../engine/AudioEngine'
 import { CanvasHUD } from './CanvasHUD'
 import { PieceTray, TrayFilter } from './PieceTray'
+import { SelectionHUD } from './SelectionHUD'
 
 interface WorkspaceViewProps {
   puzzle: PuzzleSave
@@ -32,6 +33,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [snapCount, setSnapCount] = useState<number>(puzzle.snapCount)
   const [isTrayOpen, setIsTrayOpen] = useState<boolean>(true) // Open by default for easy piece pickup
   const [isAutoSolving, setIsAutoSolving] = useState<boolean>(false)
+
+  // Marquee Selection & Group Management State
+  const [selectedPieceIds, setSelectedPieceIds] = useState<Set<number>>(new Set())
+  const marqueeBoxRef = useRef<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+  const marqueeInitialSelectionRef = useRef<Set<number>>(new Set())
+  const isDraggingGroupRef = useRef<boolean>(false)
 
   // Viewport transformation state (World translation and zoom scale)
   const [viewport, setViewport] = useState<ViewportTransform>({
@@ -117,7 +124,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             puzzle.boardWidth,
             puzzle.boardHeight,
             activeClusterRef.current,
-            settings
+            settings,
+            selectedPieceIds,
+            marqueeBoxRef.current
           )
         }
       }
@@ -128,7 +137,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     renderLoop()
 
     return () => cancelAnimationFrame(animationFrameId)
-  }, [viewport, pieces, puzzle.boardWidth, puzzle.boardHeight, settings])
+  }, [viewport, pieces, puzzle.boardWidth, puzzle.boardHeight, settings, selectedPieceIds])
 
   // Convert screen coordinates to world coordinates: P_world = (P_screen - Translation) / Scale
   const screenToWorld = useCallback(
@@ -161,11 +170,67 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       const worldPos = screenToWorld(screenX, screenY)
       const hitPiece = rendererRef.current.hitTest(pieces, worldPos.x, worldPos.y)
 
+      const isModifierPressed = e.ctrlKey || e.metaKey || e.shiftKey
+
       if (hitPiece) {
+        // CASE 1: Holding Ctrl / Cmd / Shift -> Toggle Piece / Cluster in Multi-Selection
+        if (isModifierPressed) {
+          const clusterPieceIds = pieces
+            .filter((p) => p.clusterId === hitPiece.clusterId && !p.inTray)
+            .map((p) => p.id)
+
+          setSelectedPieceIds((prev) => {
+            const next = new Set(prev)
+            const isAlreadySelected = clusterPieceIds.some((id) => next.has(id))
+            if (isAlreadySelected) {
+              clusterPieceIds.forEach((id) => next.delete(id))
+              audioEngine.playDrop()
+            } else {
+              clusterPieceIds.forEach((id) => next.add(id))
+              audioEngine.playPickup()
+            }
+            return next
+          })
+          return
+        }
+
+        // CASE 2: Clicked on a piece that is already part of the multi-selected group -> Drag entire group
+        if (selectedPieceIds.has(hitPiece.id)) {
+          isDraggingGroupRef.current = true
+          activeClusterRef.current = hitPiece.clusterId
+          dragStartPosRef.current = worldPos
+
+          // Calculate exact relative offset from click point to ALL selected pieces
+          const offsets = new Map<number, { relX: number; relY: number }>()
+          for (const p of pieces) {
+            if (selectedPieceIds.has(p.id)) {
+              offsets.set(p.id, {
+                relX: p.x - worldPos.x,
+                relY: p.y - worldPos.y,
+              })
+            }
+          }
+          dragOffsetsRef.current = offsets
+
+          highestZIndexRef.current += 10
+          const newZ = highestZIndexRef.current
+          setPieces((prev) =>
+            prev.map((p) =>
+              selectedPieceIds.has(p.id) ? { ...p, zIndex: newZ } : p
+            )
+          )
+
+          audioEngine.playPickup()
+          return
+        }
+
+        // CASE 3: Clicked on an unselected piece -> Clear selection and drag normally
+        setSelectedPieceIds(new Set())
+
         activeClusterRef.current = hitPiece.clusterId
         dragStartPosRef.current = worldPos
 
-        // Calculate and lock exact relative offset from click point to every piece in cluster
+        // Calculate exact relative offset from click point to every piece in cluster
         const offsets = new Map<number, { relX: number; relY: number }>()
         for (const p of pieces) {
           if (p.clusterId === hitPiece.clusterId) {
@@ -186,6 +251,22 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         )
 
         audioEngine.playPickup()
+      } else {
+        // CASE 4: Clicked on empty table canvas -> Start Marquee Box Selection
+        marqueeInitialSelectionRef.current = isModifierPressed
+          ? new Set(selectedPieceIds)
+          : new Set()
+
+        if (!isModifierPressed) {
+          setSelectedPieceIds(new Set())
+        }
+
+        marqueeBoxRef.current = {
+          x1: worldPos.x,
+          y1: worldPos.y,
+          x2: worldPos.x,
+          y2: worldPos.y,
+        }
       }
     }
   }
@@ -201,6 +282,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     const targetPiece = pieces.find((p) => p.id === pieceId)
     if (!targetPiece) return
 
+    setSelectedPieceIds(new Set())
     highestZIndexRef.current += 10
     const newZ = highestZIndexRef.current
 
@@ -254,12 +336,44 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         return
       }
 
-      // Piece Dragging (Strict 1-to-1 position tracking relative to cursor)
-      if (activeClusterRef.current !== null && dragOffsetsRef.current.size > 0) {
-        const screenX = e.clientX - rect.left
-        const screenY = e.clientY - rect.top
-        const currentWorldPos = screenToWorld(screenX, screenY)
+      const screenX = e.clientX - rect.left
+      const screenY = e.clientY - rect.top
+      const currentWorldPos = screenToWorld(screenX, screenY)
 
+      // Marquee Box Dragging
+      if (marqueeBoxRef.current !== null) {
+        marqueeBoxRef.current.x2 = currentWorldPos.x
+        marqueeBoxRef.current.y2 = currentWorldPos.y
+
+        const minX = Math.min(marqueeBoxRef.current.x1, marqueeBoxRef.current.x2)
+        const maxX = Math.max(marqueeBoxRef.current.x1, marqueeBoxRef.current.x2)
+        const minY = Math.min(marqueeBoxRef.current.y1, marqueeBoxRef.current.y2)
+        const maxY = Math.max(marqueeBoxRef.current.y1, marqueeBoxRef.current.y2)
+
+        const newlySelected = new Set<number>(marqueeInitialSelectionRef.current)
+        for (const p of pieces) {
+          if (!p.inTray) {
+            const pCenterX = p.x + p.width / 2
+            const pCenterY = p.y + p.height / 2
+            const overlaps =
+              p.x < maxX &&
+              p.x + p.width > minX &&
+              p.y < maxY &&
+              p.y + p.height > minY
+            if (
+              overlaps ||
+              (pCenterX >= minX && pCenterX <= maxX && pCenterY >= minY && pCenterY <= maxY)
+            ) {
+              newlySelected.add(p.id)
+            }
+          }
+        }
+        setSelectedPieceIds(newlySelected)
+        return
+      }
+
+      // Piece & Multi-Piece Dragging (Strict 1-to-1 position tracking relative to cursor)
+      if (dragOffsetsRef.current.size > 0) {
         setPieces((prev) =>
           prev.map((p) => {
             const offset = dragOffsetsRef.current.get(p.id)
@@ -282,19 +396,53 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         panStartRef.current = null
       }
 
-      if (activeClusterRef.current !== null) {
+      if (marqueeBoxRef.current !== null) {
+        marqueeBoxRef.current = null
+        if (selectedPieceIds.size > 0) {
+          audioEngine.playPickup()
+        }
+      }
+
+      if (dragOffsetsRef.current.size > 0) {
         audioEngine.playDrop()
 
-        const snapResult = ClusterManager.checkSnap(
-          pieces,
-          activeClusterRef.current,
-          settings.snapSensitivity
-        )
+        let totalSnapped = 0
+        let isSolved = false
 
-        if (snapResult.hasSnapped) {
+        if (isDraggingGroupRef.current) {
+          // Check multi-piece cascading snap for every piece in the dragged group
+          for (const pieceId of selectedPieceIds) {
+            const targetPiece = pieces.find((p) => p.id === pieceId)
+            if (targetPiece) {
+              const res = ClusterManager.checkSnap(
+                pieces,
+                targetPiece.clusterId,
+                settings.snapSensitivity
+              )
+              if (res.hasSnapped) {
+                totalSnapped += res.snappedCount
+                rendererRef.current.triggerSnapFlash(targetPiece.clusterId)
+              }
+              if (res.isFullySolved) isSolved = true
+            }
+          }
+          isDraggingGroupRef.current = false
+        } else if (activeClusterRef.current !== null) {
+          const snapResult = ClusterManager.checkSnap(
+            pieces,
+            activeClusterRef.current,
+            settings.snapSensitivity
+          )
+          if (snapResult.hasSnapped) {
+            totalSnapped += snapResult.snappedCount
+            rendererRef.current.triggerSnapFlash(activeClusterRef.current)
+          }
+          if (snapResult.isFullySolved) isSolved = true
+        }
+
+        if (totalSnapped > 0) {
           audioEngine.playSnap()
-          rendererRef.current.triggerSnapFlash(activeClusterRef.current)
-          setSnapCount((prev) => prev + snapResult.snappedCount)
+          setSnapCount((prev) => prev + totalSnapped)
         }
 
         setMovesCount((prev) => prev + 1)
@@ -311,13 +459,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           pieces,
           elapsedTime,
           movesCount: movesCount + 1,
-          snapCount: snapCount + (snapResult.hasSnapped ? snapResult.snappedCount : 0),
+          snapCount: snapCount + totalSnapped,
           placedPieces: largestClusterSize,
           updatedAt: new Date().toISOString(),
         }
         onUpdatePuzzle(updatedSave)
 
-        if (snapResult.isFullySolved) {
+        if (isSolved) {
           audioEngine.playVictory()
           const accuracy = Math.round(
             (pieces.length / Math.max(movesCount + 1, pieces.length)) * 100
@@ -351,6 +499,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     elapsedTime,
     movesCount,
     snapCount,
+    selectedPieceIds,
     onUpdatePuzzle,
     onVictory,
     screenToWorld,
@@ -403,7 +552,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setViewport((prev) => ({ ...prev, x: newX, y: newY }))
   }
 
-  // Rotate cluster around centroid
+  // Rotate single cluster around centroid
   const handleRotate = useCallback(() => {
     if (!puzzle.rotationEnabled || isAutoSolving) return
 
@@ -418,6 +567,111 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   }, [puzzle.rotationEnabled, isAutoSolving])
 
+  // Rotate Multi-Selected Group of Pieces around mutual centroid
+  const handleRotateGroup = useCallback(() => {
+    if (!puzzle.rotationEnabled || isAutoSolving || selectedPieceIds.size === 0) return
+
+    audioEngine.playRotate()
+
+    setPieces((prev) => {
+      const selectedPieces = prev.filter((p) => selectedPieceIds.has(p.id))
+      if (selectedPieces.length === 0) return prev
+
+      // Calculate mutual center
+      const avgX =
+        selectedPieces.reduce((sum, p) => sum + p.x + p.width / 2, 0) / selectedPieces.length
+      const avgY =
+        selectedPieces.reduce((sum, p) => sum + p.y + p.height / 2, 0) / selectedPieces.length
+
+      return prev.map((p) => {
+        if (!selectedPieceIds.has(p.id)) return p
+
+        const curCenterX = p.x + p.width / 2
+        const curCenterY = p.y + p.height / 2
+
+        const dx = curCenterX - avgX
+        const dy = curCenterY - avgY
+
+        // 90° Clockwise Rotation: (dx, dy) -> (-dy, dx)
+        const newCenterX = avgX - dy
+        const newCenterY = avgY + dx
+
+        return {
+          ...p,
+          x: newCenterX - p.width / 2,
+          y: newCenterY - p.height / 2,
+          rotation: (p.rotation + 90) % 360,
+        }
+      })
+    })
+  }, [puzzle.rotationEnabled, isAutoSolving, selectedPieceIds])
+
+  // Tidy Multi-Selected Pieces into a clean rectangular grid
+  const handleTidyGroup = useCallback(() => {
+    if (selectedPieceIds.size === 0) return
+
+    audioEngine.playDrop()
+
+    setPieces((prev) => {
+      const selected = prev.filter((p) => selectedPieceIds.has(p.id))
+      if (selected.length === 0) return prev
+
+      const count = selected.length
+      const cols = Math.ceil(Math.sqrt(count))
+      const margin = 20
+
+      // Position grid to the right of board or current group position
+      const startX = selected[0].x
+      const startY = selected[0].y
+      const pW = selected[0].width
+      const pH = selected[0].height
+
+      let index = 0
+      const positionMap = new Map<number, { x: number; y: number }>()
+
+      for (const p of selected) {
+        const col = index % cols
+        const row = Math.floor(index / cols)
+        positionMap.set(p.id, {
+          x: startX + col * (pW + margin),
+          y: startY + row * (pH + margin),
+        })
+        index++
+      }
+
+      return prev.map((p) => {
+        const pos = positionMap.get(p.id)
+        if (pos) {
+          return { ...p, x: pos.x, y: pos.y }
+        }
+        return p
+      })
+    })
+  }, [selectedPieceIds])
+
+  // Send Multi-Selected Pieces back to Organizer Tray
+  const handleSendSelectedToTray = useCallback(() => {
+    if (selectedPieceIds.size === 0) return
+
+    audioEngine.playTrayToggle()
+
+    setPieces((prev) =>
+      prev.map((p) =>
+        selectedPieceIds.has(p.id)
+          ? {
+              ...p,
+              inTray: true,
+              isLockedToBoard: false,
+              x: 0,
+              y: 0,
+            }
+          : p
+      )
+    )
+
+    setSelectedPieceIds(new Set())
+  }, [selectedPieceIds])
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -425,11 +679,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         isSpacePressedRef.current = true
       }
       if (e.code === 'KeyR') {
-        handleRotate()
+        if (selectedPieceIds.size > 0) {
+          handleRotateGroup()
+        } else {
+          handleRotate()
+        }
       }
       if (e.code === 'KeyT') {
         setIsTrayOpen((prev) => !prev)
         audioEngine.playTrayToggle()
+      }
+      if (e.code === 'Backspace' || e.code === 'Delete') {
+        if (selectedPieceIds.size > 0) {
+          handleSendSelectedToTray()
+        }
+      }
+      if (e.code === 'Escape') {
+        setSelectedPieceIds(new Set())
       }
     }
 
@@ -446,13 +712,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [handleRotate])
+  }, [handleRotate, handleRotateGroup, handleSendSelectedToTray, selectedPieceIds])
 
   // Animated Auto-Complete with full intact assembly
   const handleAutoComplete = () => {
     if (isAutoSolving) return
     setIsAutoSolving(true)
     audioEngine.playPickup()
+    setSelectedPieceIds(new Set())
 
     const startPieces = pieces.map((p) => ({
       id: p.id,
@@ -500,49 +767,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       if (progress < 1.0) {
         requestAnimationFrame(animateSolve)
       } else {
-        const solvedPieces: PuzzlePiece[] = puzzle.pieces.map((p) => ({
-          ...p,
-          inTray: false,
-          clusterId: 0,
-          isLockedToBoard: true,
-          rotation: 0,
-          x: p.targetX,
-          y: p.targetY,
-        }))
-
-        setPieces(solvedPieces)
-        rendererRef.current.triggerSnapFlash(0)
-        audioEngine.playVictory()
         setIsAutoSolving(false)
-
-        const finalSave: PuzzleSave = {
-          ...puzzle,
-          pieces: solvedPieces,
-          status: 'completed',
-          placedPieces: puzzle.totalPieces,
-          completedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-        onUpdatePuzzle(finalSave)
-
-        setTimeout(() => {
-          onVictory({
-            solveTime: elapsedTime,
-            moves: movesCount + 1,
-            accuracy: 100,
-          })
-        }, 350)
+        audioEngine.playVictory()
+        onVictory({
+          solveTime: elapsedTime,
+          moves: movesCount + 1,
+          accuracy: 100,
+        })
       }
     }
 
     requestAnimationFrame(animateSolve)
   }
 
-  // Deterministic Non-Overlapping Perimeter Scatter for current active tab
+  // Scatter current active tab pieces on tabletop in outer perimeter margin lanes
   const handleScatterTab = (tab: TrayFilter) => {
-    audioEngine.playTrayToggle()
-
-    const trayPieces = pieces.filter((p) => {
+    audioEngine.playPickup()
+    const piecesToScatter = pieces.filter((p) => {
       if (!p.inTray) return false
       if (tab === 'all') return true
       if (tab === 'corners') return p.isCorner
@@ -551,30 +792,25 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       return true
     })
 
-    if (trayPieces.length === 0) return
+    if (piecesToScatter.length === 0) return
 
-    const pieceW = pieces[0]?.width || 80
-    const pieceH = pieces[0]?.height || 60
-
-    const slotMap = ClusterManager.calculatePerimeterScatter(
-      trayPieces,
+    const positions = ClusterManager.calculatePerimeterScatter(
+      piecesToScatter,
       puzzle.boardWidth,
       puzzle.boardHeight,
-      pieceW,
-      pieceH
+      pieces[0]?.width || 60,
+      pieces[0]?.height || 60
     )
 
     setPieces((prev) =>
       prev.map((p) => {
-        const slot = slotMap.get(p.id)
-        if (slot) {
+        const pos = positions.get(p.id)
+        if (pos) {
           return {
             ...p,
             inTray: false,
-            x: slot.x,
-            y: slot.y,
-            isLockedToBoard: false,
-            zIndex: highestZIndexRef.current++,
+            x: pos.x,
+            y: pos.y,
           }
         }
         return p
@@ -582,7 +818,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     )
   }
 
-  // Scope-Aware Tidy for current active tab
+  // Tidy current tab pieces back into organizer tray
   const handleTidyTab = (tab: TrayFilter) => {
     audioEngine.playTrayToggle()
     const groups = ClusterManager.getClusterGroups(pieces)
@@ -633,6 +869,16 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         onSaveAndExit={onBackToLibrary}
         onAutoComplete={handleAutoComplete}
         onLocateBoardRegion={handleLocateBoardRegion}
+      />
+
+      {/* Floating Multi-Selection Actions Pill */}
+      <SelectionHUD
+        selectedCount={selectedPieceIds.size}
+        rotationEnabled={puzzle.rotationEnabled}
+        onTidyGroup={handleTidyGroup}
+        onRotateGroup={handleRotateGroup}
+        onSendToTray={handleSendSelectedToTray}
+        onDeselect={() => setSelectedPieceIds(new Set())}
       />
 
       {/* Main Interactive Canvas */}
