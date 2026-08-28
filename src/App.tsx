@@ -186,11 +186,19 @@ export const App: React.FC = () => {
     aspectRatio: string
   }) => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
+    if (config.imageSrc.startsWith('http')) {
+      img.crossOrigin = 'anonymous'
+    }
     img.src = config.imageSrc
 
     await new Promise((resolve) => {
-      img.onload = resolve
+      img.onload = () => resolve(img)
+      img.onerror = () => {
+        const fallback = new Image()
+        fallback.onload = () => resolve(fallback)
+        fallback.onerror = () => resolve(img)
+        fallback.src = config.imageSrc
+      }
     })
 
     const natW = img.naturalWidth || 1000

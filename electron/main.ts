@@ -36,7 +36,9 @@ function createWindow() {
       contextIsolation: true,
       webSecurity: true,
     },
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: process.env.VITE_DEV_SERVER_URL
+      ? path.join(__dirname, '../public/icon.png')
+      : path.join(__dirname, '../dist/icon.png'),
   })
 
   // In dev mode, load Vite server; in prod, load index.html

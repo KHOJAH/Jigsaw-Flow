@@ -99,18 +99,33 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // Initialize Canvas Renderer Sprites once per puzzle
   useEffect(() => {
+    let active = true
     const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
+    if (puzzle.imageSrc.startsWith('http')) {
+      img.crossOrigin = 'anonymous'
+    }
+    const onLoaded = (imageEl: HTMLImageElement) => {
+      if (!active) return
       rendererRef.current.preparePieceSprites(
-        img,
+        imageEl,
         puzzle.pieces,
         puzzle.boardWidth,
         puzzle.boardHeight
       )
       centerBoard()
     }
+
+    img.onload = () => onLoaded(img)
+    img.onerror = () => {
+      const fallback = new Image()
+      fallback.onload = () => onLoaded(fallback)
+      fallback.src = puzzle.imageSrc
+    }
     img.src = puzzle.imageSrc
+
+    return () => {
+      active = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzle.id, puzzle.imageSrc])
 

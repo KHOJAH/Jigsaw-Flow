@@ -14,7 +14,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-girl-red-hat',
     title: 'Girl with the Red Hat',
-    imageSrc: '/art/art4.jpg',
+    imageSrc: './art/art4.jpg',
     pieceCount: 100,
     description: 'Johannes Vermeer (c. 1665–1666) — Masterpiece portrait featuring glowing light, blue robe, and vibrant feathered red hat.',
     category: 'Fine Art',
@@ -22,7 +22,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-the-concert',
     title: 'The Concert',
-    imageSrc: '/art/art3.jpg',
+    imageSrc: './art/art3.jpg',
     pieceCount: 250,
     description: 'Gerard van Honthorst (1623) — Dutch Golden Age Caravaggisti oil painting of musicians singing and playing lutes around a table.',
     category: 'Fine Art',
@@ -30,7 +30,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-peasant-girl-knitting',
     title: 'A Peasant Girl Knitting',
-    imageSrc: '/art/art7.jpg',
+    imageSrc: './art/art7.jpg',
     pieceCount: 50,
     description: 'Jules Breton (1861) — French Realist genre painting of a serene young woman in a red bonnet knitting beside a sewing box.',
     category: 'Fine Art',
@@ -38,7 +38,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-the-weaver',
     title: 'The Weaver at the Loom',
-    imageSrc: '/art/art8.jpg',
+    imageSrc: './art/art8.jpg',
     pieceCount: 100,
     description: 'Nils Larsson (1906) — Atmospheric Swedish watercolor capturing morning sunlight illuminating a weaver working at a wooden loom.',
     category: 'Fine Art',
@@ -46,7 +46,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-horses-at-inn',
     title: 'Draft Horses at the Wayside Inn',
-    imageSrc: '/art/art9.jpg',
+    imageSrc: './art/art9.jpg',
     pieceCount: 250,
     description: 'Wouterus Verschuur (c. 1850) — Renowned Dutch equestrian painting depicting heavy draft horses, riders, and dogs resting at a rustic tavern.',
     category: 'Fine Art',
@@ -54,7 +54,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-still-life-roses',
     title: 'Still Life with Roses & Strawberries',
-    imageSrc: '/art/art11.jpg',
+    imageSrc: './art/art11.jpg',
     pieceCount: 150,
     description: '19th-century Master Still Life — Fragrant pink cabbage roses, ripe strawberries, golden cider in etched glass, and a Westerwald pewter jug.',
     category: 'Fine Art',
@@ -62,7 +62,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-tavern-dance',
     title: 'The Village Tavern Dance',
-    imageSrc: '/art/art6.jpg',
+    imageSrc: './art/art6.jpg',
     pieceCount: 250,
     description: '19th-century European Genre Painting — Lively rural folk festival with musicians on violin and guitar accompanying joyful dancers.',
     category: 'Fine Art',
@@ -70,7 +70,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-mosque-minaret',
     title: 'Mosque Minaret & Portico',
-    imageSrc: '/art/art1.jpg',
+    imageSrc: './art/art1.jpg',
     pieceCount: 50,
     description: '19th-century Orientalist Watercolor — Sunlit mosque courtyard featuring candy-striped twisted columns and a tall minaret tower.',
     category: 'Fine Art',
@@ -78,7 +78,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-mountain-pass',
     title: 'Mountain Pass at Gordale Scar',
-    imageSrc: '/art/art5.jpg',
+    imageSrc: './art/art5.jpg',
     pieceCount: 100,
     description: 'British Romantic Watercolor — Dramatic limestone gorge and rocky crags with winding trail and golden autumn foliage.',
     category: 'Fine Art',
@@ -86,7 +86,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-lake-sunset',
     title: 'Twilight Sunset over the Mountain Lake',
-    imageSrc: '/art/art10.jpg',
+    imageSrc: './art/art10.jpg',
     pieceCount: 50,
     description: 'Hudson River School (c. 1870) — Fiery crimson and orange sunset clouds reflected in a serene mountain lake with a distant sailboat.',
     category: 'Fine Art',
@@ -94,7 +94,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'art-lady-in-cathedral',
     title: 'Lady at Vespers in the Cathedral',
-    imageSrc: '/art/art2.jpg',
+    imageSrc: './art/art2.jpg',
     pieceCount: 50,
     description: '19th-century Lithograph — Chiaroscuro tonal study of a Victorian lady in dark flowing gown standing in a sunlit cathedral aisle.',
     category: 'Fine Art',

@@ -75,8 +75,10 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
   const handleExportPoster = () => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
+    if (imageSrc.startsWith('http')) {
+      img.crossOrigin = 'anonymous'
+    }
+    const renderPoster = (imageElement: HTMLImageElement) => {
       const canvas = document.createElement('canvas')
       canvas.width = 1920
       canvas.height = 1080
@@ -98,34 +100,50 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
       ctx.fillRect(0, 0, 1920, 1080)
 
       // 2. Draw Framed Solved Artwork
-      const artW = 1200
-      const artH = 675
-      const artX = (1920 - artW) / 2
-      const artY = 120
+      const margin = 100
+      const frameX = margin + 40
+      const frameY = margin + 20
+      const frameW = 860
+      const frameH = 860
 
+      const imgAspect = imageElement.width / imageElement.height
+      let drawW = frameW
+      let drawH = frameW / imgAspect
+      if (drawH > frameH) {
+        drawH = frameH
+        drawW = frameH * imgAspect
+      }
+      const drawX = frameX + (frameW - drawW) / 2
+      const drawY = frameY + (frameH - drawH) / 2
+
+      // Shadow behind artwork frame
       ctx.save()
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'
-      ctx.shadowBlur = 45
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
+      ctx.shadowBlur = 40
       ctx.shadowOffsetY = 20
-      ctx.fillStyle = '#000000'
-      ctx.fillRect(artX, artY, artW, artH)
+      ctx.fillStyle = '#1c2333'
+      ctx.fillRect(drawX - 12, drawY - 12, drawW + 24, drawH + 24)
       ctx.restore()
 
-      ctx.drawImage(img, artX, artY, artW, artH)
+      // Inner border
+      ctx.strokeStyle = '#334155'
+      ctx.lineWidth = 4
+      ctx.strokeRect(drawX - 2, drawY - 2, drawW + 4, drawH + 4)
 
-      // Art Rim Border
-      ctx.strokeStyle = 'rgba(255, 216, 192, 0.4)'
-      ctx.lineWidth = 3
-      ctx.strokeRect(artX, artY, artW, artH)
+      // Artwork
+      ctx.drawImage(imageElement, drawX, drawY, drawW, drawH)
 
-      // 3. Typography & Telemetry Footer
-      ctx.textAlign = 'center'
+      // 3. Right Column: Typography & Victory Accents
+      const textX = 1060
+
+      // Brand badge
+      ctx.font = 'bold 16px "Manrope", sans-serif'
+      ctx.fillStyle = '#10b981'
+      ctx.fillText('JIGSAW FLOW MASTER STUDIO', textX, 220)
 
       // Title
+      ctx.font = 'bold 44px "Hanken Grotesk", sans-serif'
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 44px Manrope, sans-serif'
-      ctx.fillText(title, 960, 860)
-
       // Stats Pill
       ctx.fillStyle = '#10b981'
       ctx.font = '600 24px "Hanken Grotesk", sans-serif'
@@ -145,6 +163,13 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
       link.download = `${title.toLowerCase().replace(/\s+/g, '-')}-wallpaper.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
+    }
+
+    img.onload = () => renderPoster(img)
+    img.onerror = () => {
+      const fallback = new Image()
+      fallback.onload = () => renderPoster(fallback)
+      fallback.src = imageSrc
     }
     img.src = imageSrc
   }

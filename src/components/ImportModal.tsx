@@ -56,9 +56,18 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   useEffect(() => {
     if (!imageSrc) return
     const img = new Image()
-    img.crossOrigin = 'anonymous'
+    if (imageSrc.startsWith('http')) {
+      img.crossOrigin = 'anonymous'
+    }
     img.onload = () => {
       setImgNaturalSize({ w: img.naturalWidth || 1000, h: img.naturalHeight || 750 })
+    }
+    img.onerror = () => {
+      const fallback = new Image()
+      fallback.onload = () => {
+        setImgNaturalSize({ w: fallback.naturalWidth || 1000, h: fallback.naturalHeight || 750 })
+      }
+      fallback.src = imageSrc
     }
     img.src = imageSrc
   }, [imageSrc])
@@ -135,12 +144,23 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
     try {
       const img = new Image()
-      img.crossOrigin = 'anonymous'
+      if (imageSrc.startsWith('http')) {
+        img.crossOrigin = 'anonymous'
+      }
       img.src = imageSrc
 
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve()
-        img.onerror = () => reject(new Error('Failed to load image for cropping'))
+        img.onerror = () => {
+          const fallback = new Image()
+          fallback.onload = () => {
+            img.width = fallback.width
+            img.height = fallback.height
+            resolve()
+          }
+          fallback.onerror = () => reject(new Error('Failed to load image for cropping'))
+          fallback.src = imageSrc
+        }
       })
 
       const nw = img.naturalWidth || 1000
