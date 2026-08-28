@@ -31,6 +31,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const rendererRef = useRef<CanvasRenderer>(new CanvasRenderer())
+  const dragGhostRef = useRef<HTMLDivElement | null>(null)
+  const dragGhostCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const [pieces, setPieces] = useState<PuzzlePiece[]>(puzzle.pieces)
   const [elapsedTime, setElapsedTime] = useState<number>(puzzle.elapsedTime)
@@ -324,12 +326,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     (pieceId: number) => {
       if (isAutoSolving) return
       audioEngine.playPickup()
+      wakeRenderLoop(600)
 
       setPieces((prev) => {
         const targetPiece = prev.find((p) => p.id === pieceId)
         if (!targetPiece) return prev
 
-        const tablePieces = prev.filter((p) => !p.inTray)
+        const tablePieces = prev.filter((p) => !p.inTray && p.id !== pieceId)
         const openSlot = ClusterManager.findNextOpenSlot(
           tablePieces,
           puzzle.boardWidth,
@@ -372,57 +375,49 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         return nextPieces
       })
     },
-    [isAutoSolving, puzzle, elapsedTime, movesCount, snapCount, onUpdatePuzzle]
+    [isAutoSolving, puzzle, elapsedTime, movesCount, snapCount, onUpdatePuzzle, wakeRenderLoop]
   )
 
-  // Seamless Direct Drag-and-Drop from Tray
-  const handleStartDragFromTray = (pieceId: number, clientX: number, clientY: number) => {
-    if (isAutoSolving || !canvasRef.current) return
-    const rect = canvasRef.current.getBoundingClientRect()
-    const screenX = clientX - rect.left
-    const screenY = clientY - rect.top
-    const worldPos = screenToWorld(screenX, screenY)
+  // Direct Click-and-Drag from Tray
+  const trayDragRef = useRef<{
+    pieceId: number
+    startClientX: number
+    startClientY: number
+    isDragging: boolean
+  } | null>(null)
 
+  const handleStartDragFromTray = (pieceId: number, clientX: number, clientY: number) => {
+    if (isAutoSolving) return
     const targetPiece = pieces.find((p) => p.id === pieceId)
     if (!targetPiece) return
 
-    draggedFromTrayRef.current = {
+    trayDragRef.current = {
       pieceId,
       startClientX: clientX,
       startClientY: clientY,
-      moved: false,
+      isDragging: true,
     }
 
-    setSelectedPieceIds(new Set())
-    highestZIndexRef.current += 10
-    const newZ = highestZIndexRef.current
+    const sprite = rendererRef.current.getPieceSprite(pieceId)
+    if (sprite && dragGhostCanvasRef.current) {
+      dragGhostCanvasRef.current.width = sprite.width
+      dragGhostCanvasRef.current.height = sprite.height
+      const gctx = dragGhostCanvasRef.current.getContext('2d')
+      if (gctx) {
+        gctx.clearRect(0, 0, sprite.width, sprite.height)
+        gctx.drawImage(sprite.canvas, 0, 0)
+      }
+    }
 
-    // Center piece directly under cursor with strict offset lock
-    const offsets = new Map<number, { relX: number; relY: number }>()
-    offsets.set(targetPiece.id, {
-      relX: -targetPiece.width / 2,
-      relY: -targetPiece.height / 2,
-    })
-    dragOffsetsRef.current = offsets
+    if (dragGhostRef.current) {
+      dragGhostRef.current.style.display = 'block'
+      dragGhostRef.current.style.left = `${clientX}px`
+      dragGhostRef.current.style.top = `${clientY}px`
+      dragGhostRef.current.style.transform = `translate(-50%, -50%) scale(${Math.max(0.65, viewport.scale)}) rotate(${targetPiece.rotation || 0}deg)`
+    }
 
-    // Spawn piece under cursor in world coordinates and begin dragging
-    setPieces((prev) =>
-      prev.map((p) =>
-        p.id === pieceId
-          ? {
-              ...p,
-              inTray: false,
-              x: worldPos.x - p.width / 2,
-              y: worldPos.y - p.height / 2,
-              zIndex: newZ,
-            }
-          : p
-      )
-    )
-
-    activeClusterRef.current = targetPiece.clusterId
-    dragStartPosRef.current = worldPos
     audioEngine.playPickup()
+    wakeRenderLoop(100)
   }
 
   // Handle Mouse Move (Window-level for smooth tracking outside canvas boundaries)
@@ -433,15 +428,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       if (!canvas) return
       const rect = canvas.getBoundingClientRect()
 
-      // Track drag distance from tray
-      if (draggedFromTrayRef.current && !draggedFromTrayRef.current.moved) {
-        const dist = Math.hypot(
-          e.clientX - draggedFromTrayRef.current.startClientX,
-          e.clientY - draggedFromTrayRef.current.startClientY
-        )
-        if (dist > 6) {
-          draggedFromTrayRef.current.moved = true
-        }
+      // Track drag from tray and update direct DOM overlay position
+      if (trayDragRef.current && dragGhostRef.current) {
+        dragGhostRef.current.style.left = `${e.clientX}px`
+        dragGhostRef.current.style.top = `${e.clientY}px`
       }
 
       // Canvas Panning
@@ -513,6 +503,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
 
     const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (dragGhostRef.current) {
+        dragGhostRef.current.style.display = 'none'
+      }
       if (isPanningRef.current) {
         isPanningRef.current = false
         panStartRef.current = null
@@ -525,51 +518,92 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         }
       }
 
-      // Handle Quick-Click Pop vs Direct Drag from Tray
-      if (draggedFromTrayRef.current) {
-        const { pieceId, moved } = draggedFromTrayRef.current
-        const targetPiece = pieces.find((p) => p.id === pieceId)
+      // Drop dragged tray piece directly onto table canvas
+      if (trayDragRef.current) {
+        const { pieceId } = trayDragRef.current
+        trayDragRef.current = null
 
-        if (!moved && targetPiece) {
-          // QUICK CLICK: Pop to side of image cleanly!
-          setPieces((prev) => {
-            const tablePieces = prev.filter((p) => !p.inTray && p.id !== pieceId)
-            const openSlot = ClusterManager.findNextOpenSlot(
-              tablePieces,
-              puzzle.boardWidth,
-              puzzle.boardHeight,
-              targetPiece.width,
-              targetPiece.height
-            )
-            return prev.map((p) =>
-              p.id === pieceId
-                ? { ...p, inTray: false, x: openSlot.x, y: openSlot.y }
-                : p
-            )
-          })
-          audioEngine.playPickup()
-          dragOffsetsRef.current.clear()
-          activeClusterRef.current = null
-          dragStartPosRef.current = null
-          draggedFromTrayRef.current = null
-          return
-        }
+        if (canvasRef.current) {
+          const rect = canvasRef.current.getBoundingClientRect()
+          const screenX = e.clientX - rect.left
+          const screenY = e.clientY - rect.top
+          const dropWorldPos = screenToWorld(screenX, screenY)
 
-        if (e.clientY > window.innerHeight - 130) {
-          // Dragged and released back inside tray dock: return to tray
-          setPieces((prev) =>
-            prev.map((p) =>
-              p.id === pieceId ? { ...p, inTray: true, x: 0, y: 0 } : p
-            )
-          )
-          audioEngine.playTrayToggle()
-          dragOffsetsRef.current.clear()
-          activeClusterRef.current = null
-          dragStartPosRef.current = null
-          draggedFromTrayRef.current = null
-          return
+          const targetPiece = pieces.find((p) => p.id === pieceId)
+          if (targetPiece) {
+            highestZIndexRef.current += 10
+            const newZ = highestZIndexRef.current
+            const newX = dropWorldPos.x - targetPiece.width / 2
+            const newY = dropWorldPos.y - targetPiece.height / 2
+
+            let totalSnapped = 0
+            let isSolved = false
+
+            setPieces((prev) => {
+              const nextPieces = prev.map((p) =>
+                p.id === pieceId
+                  ? {
+                      ...p,
+                      inTray: false,
+                      x: newX,
+                      y: newY,
+                      zIndex: newZ,
+                    }
+                  : p
+              )
+
+              const snapRes = ClusterManager.checkSnap(
+                nextPieces,
+                targetPiece.clusterId,
+                settings.snapSensitivity
+              )
+              if (snapRes.hasSnapped) {
+                totalSnapped = snapRes.snappedCount
+                rendererRef.current.triggerSnapFlash(targetPiece.clusterId)
+              }
+              if (snapRes.isFullySolved) isSolved = true
+
+              const groups = ClusterManager.getClusterGroups(nextPieces)
+              const largestClusterSize = Math.max(
+                ...Object.values(groups).map((g) => g.length),
+                1
+              )
+
+              onUpdatePuzzle({
+                ...puzzle,
+                pieces: nextPieces,
+                elapsedTime,
+                movesCount: movesCount + 1,
+                snapCount: snapCount + totalSnapped,
+                placedPieces: largestClusterSize,
+                updatedAt: new Date().toISOString(),
+              })
+
+              return nextPieces
+            })
+
+            setMovesCount((prev) => prev + 1)
+            if (totalSnapped > 0) {
+              audioEngine.playSnap()
+            } else {
+              audioEngine.playDrop()
+            }
+
+            if (isSolved) {
+              audioEngine.playVictory()
+              const accuracy = Math.round(
+                (pieces.length / Math.max(movesCount + 1, pieces.length)) * 100
+              )
+              onVictory({
+                solveTime: elapsedTime,
+                moves: movesCount + 1,
+                accuracy: Math.min(100, Math.max(10, accuracy)),
+              })
+            }
+            wakeRenderLoop(600)
+            return
+          }
         }
-        draggedFromTrayRef.current = null
       }
 
       if (dragOffsetsRef.current.size > 0) {
@@ -888,29 +922,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     if (candidate.inTray) {
       if (!isTrayOpen) setIsTrayOpen(true)
     } else {
-      // Outside tray (loose on table): highlight it and ensure it's framed in view!
+      // Outside tray (loose on table): highlight it with golden halo
       setSelectedPieceIds(new Set([candidate.id]))
-
-      if (canvasRef.current) {
-        const { clientWidth, clientHeight } = canvasRef.current
-        const screenPieceX = candidate.x * viewport.scale + viewport.x
-        const screenPieceY = candidate.y * viewport.scale + viewport.y
-        const isOffscreen =
-          screenPieceX < 80 ||
-          screenPieceX > clientWidth - 80 ||
-          screenPieceY < 80 ||
-          screenPieceY > clientHeight - 80
-
-        if (isOffscreen) {
-          const midX = (candidate.x + candidate.targetX) / 2
-          const midY = (candidate.y + candidate.targetY) / 2
-          setViewport((prev) => ({
-            ...prev,
-            x: clientWidth / 2 - midX * prev.scale,
-            y: clientHeight / 2 - midY * prev.scale,
-          }))
-        }
-      }
     }
 
     setHintedPiece(candidate)
@@ -987,10 +1000,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         dragOffsetsRef.current.clear()
         dragStartPosRef.current = null
         draggedFromTrayRef.current = null
+        trayDragRef.current = null
         isDraggingGroupRef.current = false
         marqueeBoxRef.current = null
         setSelectedPieceIds(new Set())
         setHintedPiece(null)
+        if (dragGhostRef.current) {
+          dragGhostRef.current.style.display = 'none'
+        }
       }
     }
 
@@ -1214,13 +1231,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           setIsTrayOpen(!isTrayOpen)
           audioEngine.playTrayToggle()
         }}
-        onPopPiece={handlePopPiece}
         onInspectPiece={(piece) => setInspectingPiece(piece)}
         onStartDragPiece={handleStartDragFromTray}
         onScatterTab={handleScatterTab}
         onTidyTab={handleTidyTab}
         isSidebarCollapsed={isSidebarCollapsed}
       />
+
+      {/* Floating Drag Overlay to render dragged piece above the tray drawer (z-50) */}
+      <div
+        ref={dragGhostRef}
+        className="fixed pointer-events-none z-50 select-none hidden"
+        style={{
+          filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.75)) drop-shadow(0 6px 14px rgba(0,0,0,0.5))',
+        }}
+      >
+        <canvas ref={dragGhostCanvasRef} className="block" />
+      </div>
 
       {/* Piece Inspection Pop-Up Card */}
       <PieceInspectModal

@@ -39,6 +39,7 @@ export const App: React.FC = () => {
 
   // Modals & layout state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false)
+  const [puzzleSessionKey, setPuzzleSessionKey] = useState<number>(0)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [importImageSrc, setImportImageSrc] = useState<string>('')
   const [importInitialTitle, setImportInitialTitle] = useState<string>('Custom Jigsaw')
@@ -279,6 +280,7 @@ export const App: React.FC = () => {
     await StorageService.saveGame(freshSave)
     setSaves((prev) => prev.map((s) => (s.id === freshSave.id ? freshSave : s)))
     setActivePuzzle(freshSave)
+    setPuzzleSessionKey((k) => k + 1)
     setActiveTab('workspace')
   }
 
@@ -288,6 +290,7 @@ export const App: React.FC = () => {
       handleRestartPuzzle(save)
     } else {
       setActivePuzzle(save)
+      setPuzzleSessionKey((k) => k + 1)
       setActiveTab('workspace')
     }
   }
@@ -402,7 +405,7 @@ export const App: React.FC = () => {
           {activeTab === 'workspace' && (
             activePuzzle ? (
               <WorkspaceView
-                key={`${activePuzzle.id}-${activePuzzle.updatedAt}`}
+                key={`${activePuzzle.id}-${puzzleSessionKey}`}
                 puzzle={activePuzzle}
                 settings={settings}
                 onUpdatePuzzle={handleUpdatePuzzle}

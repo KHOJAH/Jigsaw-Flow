@@ -71,7 +71,6 @@ interface PieceTrayProps {
   hintedPieceId?: number | null
   getPieceSprite?: (pieceId: number) => PieceSprite | undefined
   onToggleOpen: () => void
-  onPopPiece: (pieceId: number) => void
   onInspectPiece: (piece: PuzzlePiece) => void
   onStartDragPiece: (pieceId: number, screenX: number, screenY: number) => void
   onScatterTab: (tab: TrayFilter) => void
@@ -85,7 +84,6 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   hintedPieceId,
   getPieceSprite,
   onToggleOpen,
-  onPopPiece,
   onInspectPiece,
   onStartDragPiece,
   onScatterTab,
@@ -135,7 +133,6 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   }
 
   const handlePointerDown = (pieceId: number, e: React.PointerEvent) => {
-    // Primary Left Click initiates seamless drag & pop
     if (e.button !== 0) return
     e.preventDefault()
     e.stopPropagation()
@@ -326,7 +323,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                     }`}
                     title={`Piece #${piece.id + 1} (${
                       piece.isCorner ? 'Corner' : piece.isEdge ? 'Edge' : 'Center'
-                    }) • Drag onto board • Click to pop • Right-click to inspect`}
+                    }) • Drag onto board • Right-click to inspect`}
                   >
                     {/* Corner / Edge Badge Indicator */}
                     {piece.isCorner ? (

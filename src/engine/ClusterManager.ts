@@ -288,25 +288,22 @@ export class ClusterManager {
     pieceWidth: number,
     pieceHeight: number
   ): { x: number; y: number }[] {
-    const slotSpacingX = pieceWidth * 1.25
-    const slotSpacingY = pieceHeight * 1.25
-    const marginOffset = 45
+    const slotSpacingX = pieceWidth + 30
+    const slotSpacingY = pieceHeight + 30
+    const marginOffset = 60
     const slots: { x: number; y: number }[] = []
 
-    const sideRows = Math.max(3, Math.floor((boardHeight + 50) / slotSpacingY))
+    const sideRows = Math.max(4, Math.ceil((boardHeight + 60) / slotSpacingY))
 
-    // Alternate between Left and Right columns so pieces distribute neatly on both sides of the image
-    for (let col = 0; col < 4; col++) {
-      // Left side column
+    // Interleave left and right columns so pieces distribute symmetrically and neatly
+    for (let col = 0; col < 12; col++) {
       for (let row = 0; row < sideRows; row++) {
+        // Left column (growing outward left)
         slots.push({
           x: -marginOffset - (col + 1) * slotSpacingX,
           y: row * slotSpacingY,
         })
-      }
-
-      // Right side column
-      for (let row = 0; row < sideRows; row++) {
+        // Right column (growing outward right)
         slots.push({
           x: boardWidth + marginOffset + col * slotSpacingX,
           y: row * slotSpacingY,
@@ -314,12 +311,12 @@ export class ClusterManager {
       }
     }
 
-    // Top Strip (above the board if side columns fill up)
-    const topCols = Math.max(4, Math.floor((boardWidth + 300) / slotSpacingX))
-    for (let row = 0; row < 2; row++) {
+    // Top rows (above board)
+    const topCols = Math.max(6, Math.ceil((boardWidth + 400) / slotSpacingX))
+    for (let row = 0; row < 6; row++) {
       for (let col = 0; col < topCols; col++) {
         slots.push({
-          x: -150 + col * slotSpacingX,
+          x: -200 + col * slotSpacingX,
           y: -marginOffset - (row + 1) * slotSpacingY,
         })
       }
@@ -329,7 +326,7 @@ export class ClusterManager {
   }
 
   /**
-   * Finds the next open, unoccupied perimeter slot on the tabletop
+   * Finds the next open, unoccupied perimeter slot on the tabletop with zero overlap
    */
   static findNextOpenSlot(
     tablePieces: PuzzlePiece[],
@@ -339,21 +336,24 @@ export class ClusterManager {
     pieceHeight: number
   ): { x: number; y: number } {
     const slots = this.generatePerimeterSlots(boardWidth, boardHeight, pieceWidth, pieceHeight)
-    const threshold = Math.min(pieceWidth, pieceHeight) * 0.7
+    const checkRadius = Math.min(pieceWidth, pieceHeight) * 0.85
 
     for (const slot of slots) {
       const isOccupied = tablePieces.some(
-        (p) => !p.inTray && Math.hypot(p.x - slot.x, p.y - slot.y) < threshold
+        (p) => !p.inTray && Math.hypot(p.x - slot.x, p.y - slot.y) < checkRadius
       )
       if (!isOccupied) {
         return slot
       }
     }
 
-    // Fallback: slight random offset around left margin
+    // Dynamic expanded slot if standard slots are taken
+    const count = tablePieces.filter((p) => !p.inTray).length
+    const col = Math.floor(count / 6)
+    const row = count % 6
     return {
-      x: -pieceWidth * 1.5 - Math.random() * 50,
-      y: Math.random() * (boardHeight / 2),
+      x: -60 - (col + 1) * (pieceWidth + 30),
+      y: row * (pieceHeight + 30),
     }
   }
 
