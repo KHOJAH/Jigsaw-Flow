@@ -159,6 +159,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 <img
                   src={todayInfo.puzzle.imageSrc}
                   alt={todayInfo.puzzle.title}
+                  onError={(e) => {
+                    e.currentTarget.src = './art/art4.jpg'
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] px-2 py-0.5 rounded-full shadow-md flex items-center gap-0.5">
@@ -305,15 +308,32 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             <p className="font-body-md text-body-md text-on-surface-variant text-center max-w-sm mb-md">
               Drag and drop any picture, wallpaper, or photo to generate a custom jigsaw.
             </p>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpenBrowseFiles()
-              }}
-              className="bg-secondary text-on-secondary font-label-md text-label-md px-lg py-sm rounded-xl hover:bg-secondary/90 transition-all shadow-sm active:scale-95 cursor-pointer font-semibold"
-            >
-              Browse Local Photos
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenBrowseFiles()
+                }}
+                className="bg-secondary text-on-secondary font-label-md text-label-md px-md py-sm rounded-xl hover:bg-secondary/90 transition-all shadow-sm active:scale-95 cursor-pointer font-semibold flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-base">folder_open</span>
+                <span>Browse Local Photos</span>
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const randSeed = Math.floor(Math.random() * 100000)
+                  const randUrl = `https://picsum.photos/seed/${randSeed}/1200/800`
+                  onSelectImage(randUrl, `Online Discovery #${randSeed}`, 100)
+                }}
+                className="bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/40 font-label-md text-label-md px-md py-sm rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer font-semibold flex items-center gap-1.5"
+                title="Fetch a random high-resolution online photograph"
+              >
+                <span className="material-symbols-outlined text-base text-primary">shuffle</span>
+                <span>Random Online Photo</span>
+              </button>
+            </div>
           </div>
 
           {/* Quick Stats & Active Status (Spans 4 cols) */}
@@ -408,6 +428,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       <img
                         alt={save.title}
                         src={save.thumbnailUrl || save.imageSrc}
+                        onError={(e) => {
+                          e.currentTarget.src = './art/art4.jpg'
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-sm right-sm bg-tertiary text-on-tertiary font-label-sm text-label-sm px-sm py-xs rounded-full shadow-sm backdrop-blur-sm bg-opacity-90">
@@ -471,6 +494,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       alt={sample.title}
                       src={sample.imageSrc}
                       loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = './art/art4.jpg'
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Difficulty Badge */}

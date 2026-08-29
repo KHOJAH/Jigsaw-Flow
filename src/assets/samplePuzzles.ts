@@ -40,24 +40,27 @@ export function getDailyPuzzleForDate(targetDate: Date = new Date()): {
     seed = (seed << 5) - seed + dateStr.charCodeAt(i)
     seed |= 0
   }
-  const index = Math.abs(seed) % SAMPLE_PUZZLES.length
-  const base = SAMPLE_PUZZLES[index]
-
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const formattedDate = `${monthNames[targetDate.getMonth()]} ${targetDate.getDate()}, ${targetDate.getFullYear()}`
+
+  // Fresh online photograph seeded by the day's date
+  const onlineImageSrc = `https://picsum.photos/seed/jigsaw-${dateStr}/1200/800`
 
   return {
     puzzle: {
-      ...base,
       id: `daily-${dateStr}`,
-      title: `${base.title} (Daily Challenge)`,
-      pieceCount: 75, // balanced standard daily piece count
+      title: `Daily Challenge — ${formattedDate}`,
+      imageSrc: onlineImageSrc,
+      pieceCount: 75,
+      description: `Daily featured online photograph for ${dayNames[targetDate.getDay()]}, ${formattedDate}.`,
+      category: 'Daily Challenge',
     },
     dateStr,
-    formattedDate: `${monthNames[targetDate.getMonth()]} ${targetDate.getDate()}, ${targetDate.getFullYear()}`,
+    formattedDate,
     dayOfMonth: targetDate.getDate(),
     dayName: dayNames[targetDate.getDay()],
     monthName: monthNames[targetDate.getMonth()],
@@ -503,7 +506,7 @@ export const SAMPLE_PUZZLES: SamplePuzzle[] = [
   {
     id: 'space-deep-field',
     title: 'Deep Field Ancient Galaxies',
-    imageSrc: 'https://images.unsplash.com/photo-1504333638930-c878015770f7?auto=format&fit=crop&w=1200&q=80',
+    imageSrc: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
     pieceCount: 250,
     description: 'Deepest infrared look into the early universe revealing thousands of gravitationally warped ancient galaxies.',
     category: 'Space & Cosmic',
