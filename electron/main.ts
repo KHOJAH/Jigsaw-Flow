@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { discordService } from './discord.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -196,8 +197,39 @@ ipcMain.handle('fs:clearCache', async () => {
   }
 })
 
+// Discord Rich Presence IPC
+ipcMain.handle('discord:setActivity', async (_, activity) => {
+  try {
+    await discordService.setActivity(activity)
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message }
+  }
+})
+
+ipcMain.handle('discord:clearActivity', async () => {
+  try {
+    discordService.clearActivity()
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message }
+  }
+})
+
+ipcMain.handle('discord:setEnabled', async (_, enabled: boolean) => {
+  try {
+    await discordService.setEnabled(enabled)
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message }
+  }
+})
+
+
+
 app.whenReady().then(() => {
   createWindow()
+  discordService.init()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -210,4 +242,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('will-quit', () => {
+  discordService.destroy()
 })

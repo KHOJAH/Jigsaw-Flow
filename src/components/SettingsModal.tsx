@@ -57,6 +57,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ghostOpacity: 25,
       allowAutoComplete: true,
       seamlessBlending: true,
+      discordRPC: true,
     }
     setLocalSettings(def)
     audioEngine.setVolumes(def.sfxVolume, def.musicVolume)
@@ -487,6 +488,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Clear Cache</span>
                 </button>
               </div>
+            </div>
+          </section>
+
+          {/* Discord Rich Presence Integration (Spans 12 cols) */}
+          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm">
+            <div className="flex items-center gap-sm mb-md border-b border-surface-variant dark:border-transparent pb-sm">
+              <span className="material-symbols-outlined text-primary">sports_esports</span>
+              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                Discord Rich Presence
+              </h2>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md">
+              <div>
+                <h4 className="font-body-md font-semibold text-on-surface">Display Game Activity</h4>
+                <p className="text-xs text-on-surface-variant mt-0.5 max-w-xl">
+                  Display the puzzle you are currently solving and your solving time on Discord when you are in the workspace.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localSettings.discordRPC !== false}
+                  onChange={(e) => {
+                    const next = { ...localSettings, discordRPC: e.target.checked }
+                    setLocalSettings(next)
+                    onSaveSettings(next)
+                    StorageService.saveSettings(next)
+                    if (window.electronAPI) {
+                      window.electronAPI.setDiscordEnabled(e.target.checked)
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+                <span className="ml-3 font-label-sm text-xs text-on-surface-variant font-medium">
+                  {localSettings.discordRPC !== false ? 'Enabled' : 'Disabled'}
+                </span>
+              </label>
             </div>
           </section>
 

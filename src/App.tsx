@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ActiveNavTab,
   PuzzleCutStyle,
@@ -64,6 +64,10 @@ export const App: React.FC = () => {
         setActivePuzzle(inProgress)
       }
     })
+
+    if (window.electronAPI) {
+      window.electronAPI.setDiscordEnabled(settings.discordRPC !== false)
+    }
   }, [])
 
   // Sync Dark/Light theme class with root HTML element
@@ -122,6 +126,30 @@ export const App: React.FC = () => {
       audioEngine.stopAmbientMusic()
     }
   }, [activeTab, settings.musicVolume])
+
+  // Manage Discord Rich Presence based on current screen & settings
+  useEffect(() => {
+    if (!window.electronAPI) return
+
+    if (activeTab === 'workspace' && activePuzzle && settings.discordRPC !== false) {
+      const startTimestamp = Date.now() - Math.max(0, (activePuzzle.elapsedTime || 0)) * 1000
+      window.electronAPI.setDiscordActivity({
+        details: `Playing: ${activePuzzle.title}`,
+        startTimestamp,
+        largeImageKey: 'app_icon',
+        largeImageText: 'Jigsaw Flow',
+      })
+    } else {
+      window.electronAPI.clearDiscordActivity()
+    }
+
+    return () => {
+      if (window.electronAPI && (activeTab !== 'workspace' || settings.discordRPC === false)) {
+        window.electronAPI.clearDiscordActivity()
+      }
+    }
+  }, [activeTab, activePuzzle?.id, activePuzzle?.title, settings.discordRPC])
+
 
   // Open native or fallback file browser
   const handleOpenBrowseFiles = async () => {

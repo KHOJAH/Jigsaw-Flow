@@ -19,6 +19,19 @@ export interface ElectronAPI {
   exportSave: (id: string, data: any) => Promise<{ success: boolean; canceled?: boolean; filePath?: string }>
   importSave: () => Promise<any | null>
   clearCache: () => Promise<{ success: boolean; error?: string }>
+
+  // Discord Rich Presence
+  setDiscordActivity: (activity: {
+    details: string
+    state?: string
+    startTimestamp?: number
+    largeImageKey?: string
+    largeImageText?: string
+    smallImageKey?: string
+    smallImageText?: string
+  }) => Promise<{ success: boolean; error?: string }>
+  clearDiscordActivity: () => Promise<{ success: boolean; error?: string }>
+  setDiscordEnabled: (enabled: boolean) => Promise<{ success: boolean; error?: string }>
 }
 
 const electronAPI: ElectronAPI = {
@@ -40,6 +53,12 @@ const electronAPI: ElectronAPI = {
   exportSave: (id: string, data: any) => ipcRenderer.invoke('fs:exportSave', { id, data }),
   importSave: () => ipcRenderer.invoke('fs:importSave'),
   clearCache: () => ipcRenderer.invoke('fs:clearCache'),
+
+  setDiscordActivity: (activity) => ipcRenderer.invoke('discord:setActivity', activity),
+  clearDiscordActivity: () => ipcRenderer.invoke('discord:clearActivity'),
+  setDiscordEnabled: (enabled) => ipcRenderer.invoke('discord:setEnabled', enabled),
 }
 
+
 contextBridge.exposeInMainWorld('electronAPI', electronAPI)
+

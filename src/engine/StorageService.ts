@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   ghostOpacity: 25,
   allowAutoComplete: true,
   seamlessBlending: true,
+  discordRPC: true,
 }
 
 export class StorageService {

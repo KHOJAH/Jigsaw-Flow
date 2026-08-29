@@ -93,6 +93,7 @@ export interface UserSettings {
   ghostOpacity: number // 0 - 100
   allowAutoComplete: boolean
   seamlessBlending: boolean
+  discordRPC: boolean
 }
 
 export interface ViewportTransform {
@@ -102,6 +103,16 @@ export interface ViewportTransform {
 }
 
 export type ActiveNavTab = 'library' | 'workspace' | 'history' | 'settings'
+
+export interface DiscordActivityPayload {
+  details: string
+  state?: string
+  startTimestamp?: number
+  largeImageKey?: string
+  largeImageText?: string
+  smallImageKey?: string
+  smallImageText?: string
+}
 
 declare global {
   interface Window {
@@ -118,6 +129,12 @@ declare global {
       exportSave: (id: string, data: any) => Promise<{ success: boolean; canceled?: boolean; filePath?: string }>
       importSave: () => Promise<any | null>
       clearCache: () => Promise<{ success: boolean; error?: string }>
+      setDiscordActivity: (activity: DiscordActivityPayload) => Promise<{ success: boolean; error?: string }>
+      clearDiscordActivity: () => Promise<{ success: boolean; error?: string }>
+      setDiscordEnabled: (enabled: boolean) => Promise<{ success: boolean; error?: string }>
     }
   }
 }
+
+
+
