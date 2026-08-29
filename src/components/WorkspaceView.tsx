@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { PuzzlePiece, PuzzleSave, UserSettings, ViewportTransform } from '../types/puzzle'
 import { CanvasRenderer } from '../engine/CanvasRenderer'
 import { ClusterManager } from '../engine/ClusterManager'
+import { JigsawGenerator } from '../engine/JigsawGenerator'
 import { audioEngine } from '../engine/AudioEngine'
 import { CanvasHUD } from './CanvasHUD'
 import { PieceTray, TrayFilter } from './PieceTray'
@@ -237,11 +238,11 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
       const isModifierPressed = e.ctrlKey || e.metaKey || e.shiftKey
 
-      if (hitPiece) {
+      if (hitPiece && !hitPiece.isLockedToBoard) {
         // CASE 1: Holding Ctrl / Cmd / Shift -> Toggle Piece / Cluster in Multi-Selection
         if (isModifierPressed) {
           const clusterPieceIds = pieces
-            .filter((p) => p.clusterId === hitPiece.clusterId && !p.inTray)
+            .filter((p) => p.clusterId === hitPiece.clusterId && !p.inTray && !p.isLockedToBoard)
             .map((p) => p.id)
 
           setSelectedPieceIds((prev) => {
@@ -268,7 +269,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           // Calculate exact relative offset from click point to ALL selected pieces
           const offsets = new Map<number, { relX: number; relY: number }>()
           for (const p of pieces) {
-            if (selectedPieceIds.has(p.id)) {
+            if (selectedPieceIds.has(p.id) && !p.isLockedToBoard) {
               offsets.set(p.id, {
                 relX: p.x - worldPos.x,
                 relY: p.y - worldPos.y,
@@ -298,7 +299,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         // Calculate exact relative offset from click point to every piece in cluster
         const offsets = new Map<number, { relX: number; relY: number }>()
         for (const p of pieces) {
-          if (p.clusterId === hitPiece.clusterId) {
+          if (p.clusterId === hitPiece.clusterId && !p.isLockedToBoard) {
             offsets.set(p.id, {
               relX: p.x - worldPos.x,
               relY: p.y - worldPos.y,
@@ -317,7 +318,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
         audioEngine.playPickup()
       } else {
-        // CASE 4: Clicked on empty table canvas -> Start Marquee Box Selection
+        // CASE 4: Clicked on empty table canvas or locked board piece -> Start Marquee Box Selection
         marqueeInitialSelectionRef.current = isModifierPressed
           ? new Set(selectedPieceIds)
           : new Set()
@@ -479,7 +480,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
         const newlySelected = new Set<number>(marqueeInitialSelectionRef.current)
         for (const p of pieces) {
-          if (!p.inTray) {
+          if (!p.inTray && !p.isLockedToBoard) {
             const pCenterX = p.x + p.width / 2
             const pCenterY = p.y + p.height / 2
             const overlaps =
@@ -764,6 +765,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
     const targetClusterId = activeClusterRef.current
     if (targetClusterId !== null) {
+      // Prevent rotating locked clusters
+      const clusterPieces = pieces.filter((p) => p.clusterId === targetClusterId)
+      if (clusterPieces.some((p) => p.isLockedToBoard)) return
+
       audioEngine.playRotate()
       setPieces((prev) => {
         const next = [...prev]
@@ -771,7 +776,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         return next
       })
     }
-  }, [puzzle.rotationEnabled, isAutoSolving])
+  }, [puzzle.rotationEnabled, isAutoSolving, pieces])
 
   // Rotate Multi-Selected Group of Pieces around mutual centroid
   const handleRotateGroup = useCallback(() => {
@@ -780,7 +785,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     audioEngine.playRotate()
 
     setPieces((prev) => {
-      const selectedPieces = prev.filter((p) => selectedPieceIds.has(p.id))
+      const selectedPieces = prev.filter((p) => selectedPieceIds.has(p.id) && !p.isLockedToBoard)
       if (selectedPieces.length === 0) return prev
 
       // Calculate mutual center
@@ -790,7 +795,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         selectedPieces.reduce((sum, p) => sum + p.y + p.height / 2, 0) / selectedPieces.length
 
       return prev.map((p) => {
-        if (!selectedPieceIds.has(p.id)) return p
+        if (!selectedPieceIds.has(p.id) || p.isLockedToBoard) return p
 
         const curCenterX = p.x + p.width / 2
         const curCenterY = p.y + p.height / 2
@@ -1169,6 +1174,26 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     )
   }
 
+  // Shuffle pieces in the organizer tray
+  const handleShuffleTray = useCallback(() => {
+    if (isAutoSolving) return
+    audioEngine.playPickup()
+
+    setPieces((prev) => {
+      // Shuffle pieces array to randomize tray order
+      const nextPieces = JigsawGenerator.shuffleArray(prev)
+      onUpdatePuzzle({
+        ...puzzle,
+        pieces: nextPieces,
+        elapsedTime,
+        movesCount,
+        snapCount,
+        updatedAt: new Date().toISOString(),
+      })
+      return nextPieces
+    })
+  }, [isAutoSolving, puzzle, elapsedTime, movesCount, snapCount, onUpdatePuzzle])
+
   const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault()
     const rect = canvasRef.current?.getBoundingClientRect()
@@ -1250,6 +1275,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         onStartDragPiece={handleStartDragFromTray}
         onScatterTab={handleScatterTab}
         onTidyTab={handleTidyTab}
+        onShuffleTray={handleShuffleTray}
         isSidebarCollapsed={isSidebarCollapsed}
       />
 

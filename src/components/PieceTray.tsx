@@ -75,6 +75,7 @@ interface PieceTrayProps {
   onStartDragPiece: (pieceId: number, screenX: number, screenY: number) => void
   onScatterTab: (tab: TrayFilter) => void
   onTidyTab: (tab: TrayFilter) => void
+  onShuffleTray?: () => void
   isSidebarCollapsed?: boolean
 }
 
@@ -88,6 +89,7 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
   onStartDragPiece,
   onScatterTab,
   onTidyTab,
+  onShuffleTray,
   isSidebarCollapsed = false,
 }) => {
   const [filter, setFilter] = useState<TrayFilter>('all')
@@ -250,6 +252,17 @@ export const PieceTray: React.FC<PieceTrayProps> = ({
                 3R
               </button>
             </div>
+
+            {onShuffleTray && (
+              <button
+                onClick={onShuffleTray}
+                className="px-sm py-1.5 text-xs font-semibold rounded-xl bg-surface hover:bg-surface-variant text-on-surface border border-outline-variant/50 dark:bg-white/5 dark:hover:bg-white/10 dark:border-transparent shadow-xs hover:shadow transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                title="Randomly shuffle pieces in the tray"
+              >
+                <span className="material-symbols-outlined text-sm">shuffle</span>
+                <span>Shuffle</span>
+              </button>
+            )}
 
             <button
               onClick={() => onScatterTab(filter)}

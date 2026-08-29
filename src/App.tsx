@@ -357,18 +357,20 @@ export const App: React.FC = () => {
 
   // Restart puzzle from beginning with pieces cleanly reset in organizer tray
   const handleRestartPuzzle = async (save: PuzzleSave) => {
-    const resetPieces: PuzzlePiece[] = save.pieces.map((p, idx) => ({
-      ...p,
-      inTray: true,
-      isLockedToBoard: false,
-      clusterId: p.id,
-      x: 0,
-      y: 0,
-      rotation: save.rotationEnabled
-        ? [0, 90, 180, 270][Math.floor(Math.random() * 4)]
-        : 0,
-      zIndex: idx,
-    }))
+    const resetPieces: PuzzlePiece[] = JigsawGenerator.shuffleArray(
+      save.pieces.map((p, idx) => ({
+        ...p,
+        inTray: true,
+        isLockedToBoard: false,
+        clusterId: p.id,
+        x: 0,
+        y: 0,
+        rotation: save.rotationEnabled
+          ? [0, 90, 180, 270][Math.floor(Math.random() * 4)]
+          : 0,
+        zIndex: idx,
+      }))
+    )
 
     const freshSave: PuzzleSave = {
       ...save,
