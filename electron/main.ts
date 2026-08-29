@@ -3,6 +3,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { discordService } from './discord.js'
+import { appUpdaterService } from './updater.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -56,6 +57,9 @@ function createWindow() {
   win.on('unmaximize', () => {
     win?.webContents.send('window:state-changed', { isMaximized: false })
   })
+
+  // Initialize auto-updater service
+  appUpdaterService.init(win)
 }
 
 // Window Control IPC
@@ -246,4 +250,5 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   discordService.destroy()
+  appUpdaterService.destroy()
 })

@@ -114,6 +114,32 @@ export interface DiscordActivityPayload {
   smallImageText?: string
 }
 
+export type UpdateStatusState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+
+export interface UpdateStatus {
+  status: UpdateStatusState
+  currentVersion: string
+  updateInfo?: {
+    version: string
+    releaseDate?: string
+    releaseNotes?: string
+  }
+  progress?: {
+    percent: number
+    bytesPerSecond: number
+    transferred: number
+    total: number
+  }
+  error?: string
+}
+
 declare global {
   interface Window {
     electronAPI?: {
@@ -132,6 +158,11 @@ declare global {
       setDiscordActivity: (activity: DiscordActivityPayload) => Promise<{ success: boolean; error?: string }>
       clearDiscordActivity: () => Promise<{ success: boolean; error?: string }>
       setDiscordEnabled: (enabled: boolean) => Promise<{ success: boolean; error?: string }>
+      checkForUpdates: () => Promise<UpdateStatus>
+      downloadUpdate: () => Promise<{ success: boolean; error?: string }>
+      installUpdate: () => Promise<{ success: boolean }>
+      getUpdateStatus: () => Promise<UpdateStatus>
+      onUpdateStatusChanged: (callback: (status: UpdateStatus) => void) => () => void
     }
   }
 }

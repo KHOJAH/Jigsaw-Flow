@@ -32,6 +32,13 @@ export interface ElectronAPI {
   }) => Promise<{ success: boolean; error?: string }>
   clearDiscordActivity: () => Promise<{ success: boolean; error?: string }>
   setDiscordEnabled: (enabled: boolean) => Promise<{ success: boolean; error?: string }>
+
+  // Auto Updater
+  checkForUpdates: () => Promise<any>
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>
+  installUpdate: () => Promise<{ success: boolean }>
+  getUpdateStatus: () => Promise<any>
+  onUpdateStatusChanged: (callback: (status: any) => void) => () => void
 }
 
 const electronAPI: ElectronAPI = {
@@ -57,6 +64,16 @@ const electronAPI: ElectronAPI = {
   setDiscordActivity: (activity) => ipcRenderer.invoke('discord:setActivity', activity),
   clearDiscordActivity: () => ipcRenderer.invoke('discord:clearActivity'),
   setDiscordEnabled: (enabled) => ipcRenderer.invoke('discord:setEnabled', enabled),
+
+  checkForUpdates: () => ipcRenderer.invoke('updater:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download'),
+  installUpdate: () => ipcRenderer.invoke('updater:install'),
+  getUpdateStatus: () => ipcRenderer.invoke('updater:getStatus'),
+  onUpdateStatusChanged: (callback) => {
+    const handler = (_: any, status: any) => callback(status)
+    ipcRenderer.on('updater:status-changed', handler)
+    return () => ipcRenderer.removeListener('updater:status-changed', handler)
+  },
 }
 
 

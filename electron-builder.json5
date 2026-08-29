@@ -3,6 +3,11 @@
   "appId": "com.jigsawflow.app",
   "productName": "Jigsaw Flow",
   "copyright": "Copyright © 2026 Jigsaw Flow",
+  "publish": {
+    "provider": "github",
+    "owner": "KHOJAH",
+    "repo": "Jigsaw-Flow"
+  },
   "directories": {
     "output": "release",
     "buildResources": "build"

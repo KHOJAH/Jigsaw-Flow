@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { SnapSensitivity, TableSurface, UserSettings } from '../types/puzzle'
+import { SnapSensitivity, TableSurface, UpdateStatus, UserSettings } from '../types/puzzle'
 import { audioEngine } from '../engine/AudioEngine'
 import { StorageService } from '../engine/StorageService'
 
@@ -9,6 +9,10 @@ interface SettingsModalProps {
   onExportSave: () => void
   onImportSave: () => void
   onClearCache: () => void
+  updateStatus?: UpdateStatus
+  onCheckForUpdates?: () => void
+  onDownloadUpdate?: () => void
+  onInstallUpdate?: () => void
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -17,6 +21,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onExportSave,
   onImportSave,
   onClearCache,
+  updateStatus,
+  onCheckForUpdates,
+  onDownloadUpdate,
+  onInstallUpdate,
 }) => {
   const [localSettings, setLocalSettings] = useState<UserSettings>({ ...settings })
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false)
@@ -526,6 +534,78 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {localSettings.discordRPC !== false ? 'Enabled' : 'Disabled'}
                 </span>
               </label>
+            </div>
+          </section>
+
+          {/* App Version & Updates (Spans 12 cols) */}
+          <section className="md:col-span-12 bg-surface-container border border-outline-variant/30 dark:border-transparent rounded-2xl p-lg shadow-sm">
+            <div className="flex items-center gap-sm mb-md border-b border-surface-variant dark:border-transparent pb-sm">
+              <span className="material-symbols-outlined text-primary">update</span>
+              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                Application Updates & Version
+              </h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-body-md font-semibold text-on-surface">Jigsaw Flow</h4>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-mono font-semibold bg-surface-variant text-on-surface-variant">
+                    v{updateStatus?.currentVersion || '1.0.0'}
+                  </span>
+                </div>
+                <p className="text-xs text-on-surface-variant mt-1 max-w-xl">
+                  {updateStatus?.status === 'checking' && 'Checking for updates...'}
+                  {updateStatus?.status === 'available' && `Update v${updateStatus.updateInfo?.version || ''} is available to download!`}
+                  {updateStatus?.status === 'downloading' && `Downloading update: ${updateStatus.progress?.percent || 0}% completed...`}
+                  {updateStatus?.status === 'downloaded' && `Version v${updateStatus.updateInfo?.version || ''} is ready to install.`}
+                  {updateStatus?.status === 'not-available' && 'You are currently using the latest version.'}
+                  {updateStatus?.status === 'error' && (updateStatus.error || 'Unable to check for updates at this time.')}
+                  {(!updateStatus || updateStatus.status === 'idle') && 'Keep Jigsaw Flow up to date with the latest features, performance improvements, and puzzles.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-sm">
+                {updateStatus?.status === 'available' && onDownloadUpdate && (
+                  <button
+                    onClick={onDownloadUpdate}
+                    className="px-md py-sm bg-primary text-on-primary hover:bg-primary-container font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base">download</span>
+                    <span>Download Update</span>
+                  </button>
+                )}
+
+                {updateStatus?.status === 'downloading' && (
+                  <div className="px-md py-sm bg-surface-variant text-primary font-semibold text-xs rounded-xl flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base animate-spin">sync</span>
+                    <span>{updateStatus.progress?.percent || 0}%</span>
+                  </div>
+                )}
+
+                {updateStatus?.status === 'downloaded' && onInstallUpdate && (
+                  <button
+                    onClick={onInstallUpdate}
+                    className="px-md py-sm bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base">restart_alt</span>
+                    <span>Restart & Install</span>
+                  </button>
+                )}
+
+                {onCheckForUpdates && updateStatus?.status !== 'downloading' && (
+                  <button
+                    onClick={onCheckForUpdates}
+                    disabled={updateStatus?.status === 'checking'}
+                    className="px-md py-sm bg-surface hover:bg-surface-variant text-on-surface font-semibold text-xs rounded-xl border border-outline-variant/40 dark:border-transparent transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <span className={`material-symbols-outlined text-base ${updateStatus?.status === 'checking' ? 'animate-spin' : ''}`}>
+                      refresh
+                    </span>
+                    <span>{updateStatus?.status === 'checking' ? 'Checking...' : 'Check for Updates'}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </section>
 

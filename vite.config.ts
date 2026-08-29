@@ -17,6 +17,7 @@ export default defineConfig({
             rollupOptions: {
               external: [
                 'electron',
+                'electron-updater',
                 '@xhayper/discord-rpc',
                 'ws',
                 'bufferutil',

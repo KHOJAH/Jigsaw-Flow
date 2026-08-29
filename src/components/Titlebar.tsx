@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from 'react'
+import { UpdateStatus } from '../types/puzzle'
 
 interface TitlebarProps {
   currentPuzzleTitle?: string
   theme?: string
   onToggleTheme?: () => void
+  updateStatus?: UpdateStatus
+  onDownloadUpdate?: () => void
+  onInstallUpdate?: () => void
 }
 
 export const Titlebar: React.FC<TitlebarProps> = ({
   currentPuzzleTitle,
   theme,
   onToggleTheme,
+  updateStatus,
+  onDownloadUpdate,
+  onInstallUpdate,
 }) => {
   const [isMaximized, setIsMaximized] = useState(false)
   const isElectron = !!window.electronAPI
@@ -75,6 +82,36 @@ export const Titlebar: React.FC<TitlebarProps> = ({
         className="flex items-center gap-1 app-region-no-drag pointer-events-auto z-50"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
+        {/* Update Notification Pill Badge */}
+        {updateStatus?.status === 'available' && (
+          <button
+            onClick={onDownloadUpdate}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container transition-all shadow-xs mr-2 cursor-pointer animate-pulse"
+            title="A new release is ready! Click to download."
+          >
+            <span className="material-symbols-outlined text-xs">download</span>
+            <span>Update (v{updateStatus.updateInfo?.version || 'New'})</span>
+          </button>
+        )}
+
+        {updateStatus?.status === 'downloading' && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-variant text-primary mr-2">
+            <span className="material-symbols-outlined text-xs animate-spin">sync</span>
+            <span>Downloading {updateStatus.progress?.percent || 0}%</span>
+          </div>
+        )}
+
+        {updateStatus?.status === 'downloaded' && (
+          <button
+            onClick={onInstallUpdate}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-xs mr-2 cursor-pointer"
+            title="Update downloaded! Click to restart and apply."
+          >
+            <span className="material-symbols-outlined text-xs">restart_alt</span>
+            <span>Restart to Install</span>
+          </button>
+        )}
+
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}

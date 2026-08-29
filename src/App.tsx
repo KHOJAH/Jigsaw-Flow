@@ -4,6 +4,7 @@ import {
   PuzzleCutStyle,
   PuzzlePiece,
   PuzzleSave,
+  UpdateStatus,
   UserSettings,
 } from './types/puzzle'
 import { Titlebar } from './components/Titlebar'
@@ -52,7 +53,10 @@ export const App: React.FC = () => {
     accuracy: number
   }>({ solveTime: 0, moves: 0, accuracy: 100 })
 
-  // Load saved puzzles and set audio on mount
+  // Auto-updater state
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | undefined>(undefined)
+
+  // Load saved puzzles, set audio, and listen for auto-updates on mount
   useEffect(() => {
     audioEngine.setVolumes(settings.sfxVolume, settings.musicVolume)
 
@@ -67,8 +71,34 @@ export const App: React.FC = () => {
 
     if (window.electronAPI) {
       window.electronAPI.setDiscordEnabled(settings.discordRPC !== false)
+      window.electronAPI.getUpdateStatus().then(setUpdateStatus).catch(() => {})
+      const cleanupUpdater = window.electronAPI.onUpdateStatusChanged((status) => {
+        setUpdateStatus(status)
+      })
+      return cleanupUpdater
     }
   }, [])
+
+  // Auto-updater trigger functions
+  const handleCheckForUpdates = async () => {
+    if (window.electronAPI) {
+      const status = await window.electronAPI.checkForUpdates()
+      setUpdateStatus(status)
+    }
+  }
+
+  const handleDownloadUpdate = async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.downloadUpdate()
+    }
+  }
+
+  const handleInstallUpdate = async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.installUpdate()
+    }
+  }
+
 
   // Sync Dark/Light theme class with root HTML element
   useEffect(() => {
@@ -405,6 +435,9 @@ export const App: React.FC = () => {
         currentPuzzleTitle={activePuzzle?.title}
         theme={settings.theme}
         onToggleTheme={handleToggleTheme}
+        updateStatus={updateStatus}
+        onDownloadUpdate={handleDownloadUpdate}
+        onInstallUpdate={handleInstallUpdate}
       />
 
       {/* Main App Layout */}
@@ -491,6 +524,10 @@ export const App: React.FC = () => {
               onExportSave={handleExportSave}
               onImportSave={handleImportSave}
               onClearCache={handleClearCache}
+              updateStatus={updateStatus}
+              onCheckForUpdates={handleCheckForUpdates}
+              onDownloadUpdate={handleDownloadUpdate}
+              onInstallUpdate={handleInstallUpdate}
             />
           )}
         </main>
