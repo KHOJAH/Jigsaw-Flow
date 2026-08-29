@@ -66,22 +66,13 @@ export class CanvasRenderer {
       JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
       ctx.clip()
 
-      // 2. Draw corresponding segment of source image
-      const srcX = piece.targetX * scaleX
-      const srcY = piece.targetY * scaleY
-      const srcW = piece.width * scaleX
-      const srcH = piece.height * scaleY
-
+      // 2. Draw corresponding segment of source image mapped directly to board dimensions
       ctx.drawImage(
         image,
-        srcX - marginX * scaleX,
-        srcY - marginY * scaleY,
-        srcW + marginX * 2 * scaleX,
-        srcH + marginY * 2 * scaleY,
-        -marginX,
-        -marginY,
-        spriteWidth,
-        spriteHeight
+        -piece.targetX,
+        -piece.targetY,
+        boardWidth,
+        boardHeight
       )
 
       ctx.restore()
@@ -175,9 +166,8 @@ export class CanvasRenderer {
     const isAllSolved =
       tablePieces.length === pieces.length &&
       tablePieces.length > 0 &&
-      clusterSizes.get(tablePieces[0]?.clusterId) === pieces.length &&
       tablePieces.every(
-        (p) => p.rotation === 0 && Math.hypot(p.x - p.targetX, p.y - p.targetY) < 6
+        (p) => p.isLockedToBoard || (p.rotation === 0 && Math.hypot(p.x - p.targetX, p.y - p.targetY) < 6)
       )
 
     if (isAllSolved && this.sourceImage) {
@@ -218,11 +208,55 @@ export class CanvasRenderer {
       const groundedPieces = tablePieces.filter(
         (p) => p.isLockedToBoard && p.clusterId !== activeClusterId
       )
-      for (const piece of groundedPieces) {
-        const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
-        if (!isThisFlashing && !isSelected && !isPieceVisible(piece)) continue
-        this.drawSinglePiece(ctx, piece, settings, 1.0, false, isThisFlashing, isSelected)
+
+      if (groundedPieces.length > 0) {
+        if (this.sourceImage) {
+          // Seamless Grounded Rendering: Union clipping path of all grounded pieces with direct master image draw
+          ctx.save()
+          ctx.beginPath()
+          for (const piece of groundedPieces) {
+            ctx.save()
+            ctx.translate(piece.targetX, piece.targetY)
+            JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
+            ctx.restore()
+          }
+          ctx.clip()
+
+          // Draw continuous source image across the entire board (zero interior seams or tab leakages)
+          ctx.drawImage(this.sourceImage, 0, 0, boardWidth, boardHeight)
+          ctx.restore()
+        } else {
+          for (const piece of groundedPieces) {
+            this.drawSinglePiece(ctx, piece, settings, 1.0, false, false, false)
+          }
+        }
+
+        // Active Snap Flash & Multi-Selection effects for grounded pieces
+        for (const piece of groundedPieces) {
+          const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
+          const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
+          if (isThisFlashing || isSelected) {
+            ctx.save()
+            ctx.translate(piece.targetX, piece.targetY)
+            ctx.beginPath()
+            JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
+            if (isThisFlashing) {
+              ctx.strokeStyle = 'rgba(249, 210, 186, 0.95)'
+              ctx.lineWidth = 3
+              ctx.shadowColor = '#ffd8c0'
+              ctx.shadowBlur = 12
+              ctx.stroke()
+            }
+            if (isSelected) {
+              ctx.strokeStyle = '#f9d2ba'
+              ctx.lineWidth = 3
+              ctx.shadowColor = '#5e3122'
+              ctx.shadowBlur = 10
+              ctx.stroke()
+            }
+            ctx.restore()
+          }
+        }
       }
 
       // -------------------------------------------------------------
@@ -234,12 +268,31 @@ export class CanvasRenderer {
       // Sort loose pieces by zIndex
       loosePieces.sort((a, b) => a.zIndex - b.zIndex)
 
+      // Group loose pieces by cluster to render clusters as unified seamless chunks
+      const looseClusters = new Map<number, PuzzlePiece[]>()
       for (const piece of loosePieces) {
-        const isClustered = (clusterSizes.get(piece.clusterId) || 0) > 1
-        const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-        const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
-        if (!isThisFlashing && !isSelected && !isPieceVisible(piece)) continue
-        this.drawSinglePiece(ctx, piece, settings, 1.0, !isClustered, isThisFlashing, isSelected)
+        if (!looseClusters.has(piece.clusterId)) {
+          looseClusters.set(piece.clusterId, [])
+        }
+        looseClusters.get(piece.clusterId)!.push(piece)
+      }
+
+      for (const [clusterId, cPieces] of looseClusters) {
+        const isThisFlashing = isFlashing && clusterId === this.flashClusterId
+        const hasSelected = cPieces.some(
+          (p) => selectedPieceIds.has(p.id) || (hintPiece !== null && p.id === hintPiece.id)
+        )
+        const isVisible = cPieces.some((p) => isPieceVisible(p))
+        if (!isThisFlashing && !hasSelected && !isVisible) continue
+
+        if (cPieces.length === 1) {
+          const piece = cPieces[0]
+          const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
+          this.drawSinglePiece(ctx, piece, settings, 1.0, true, isThisFlashing, isSelected)
+        } else {
+          // Multi-piece cluster: draw with unified clip path so interior seams dissolve
+          this.drawClusterGroup(ctx, cPieces, settings, 1.0, isThisFlashing, hasSelected, selectedPieceIds, hintPiece)
+        }
       }
 
       // -------------------------------------------------------------
@@ -247,24 +300,43 @@ export class CanvasRenderer {
       // -------------------------------------------------------------
       if (activeClusterId !== null) {
         const activePieces = tablePieces.filter((p) => p.clusterId === activeClusterId)
+        if (activePieces.length > 0) {
+          const isThisFlashing = isFlashing && activeClusterId === this.flashClusterId
+          const hasSelected = activePieces.some(
+            (p) => selectedPieceIds.has(p.id) || (hintPiece !== null && p.id === hintPiece.id)
+          )
 
-        // Draw deep elevated drop shadow
-        ctx.save()
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)'
-        ctx.shadowBlur = 20
-        ctx.shadowOffsetX = 10
-        ctx.shadowOffsetY = 16
+          // 1. Draw elevated drop shadow for the cluster
+          ctx.save()
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)'
+          ctx.shadowBlur = 20
+          ctx.shadowOffsetX = 10
+          ctx.shadowOffsetY = 16
 
-        for (const piece of activePieces) {
-          this.drawSinglePiece(ctx, piece, settings, 1.0, false, false, false)
-        }
-        ctx.restore()
+          // Draw unified shadow silhouette
+          for (const piece of activePieces) {
+            ctx.save()
+            const centerX = piece.x + piece.width / 2
+            const centerY = piece.y + piece.height / 2
+            ctx.translate(centerX, centerY)
+            if (piece.rotation !== 0) ctx.rotate((piece.rotation * Math.PI) / 180)
+            ctx.translate(-piece.width / 2, -piece.height / 2)
+            ctx.beginPath()
+            JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+            ctx.fill()
+            ctx.restore()
+          }
+          ctx.restore()
 
-        // Draw active piece sprites on top
-        for (const piece of activePieces) {
-          const isThisFlashing = isFlashing && piece.clusterId === this.flashClusterId
-          const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
-          this.drawSinglePiece(ctx, piece, settings, 1.0, true, isThisFlashing, isSelected)
+          // 2. Draw cluster pieces
+          if (activePieces.length === 1) {
+            const piece = activePieces[0]
+            const isSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
+            this.drawSinglePiece(ctx, piece, settings, 1.0, true, isThisFlashing, isSelected)
+          } else {
+            this.drawClusterGroup(ctx, activePieces, settings, 1.0, isThisFlashing, hasSelected, selectedPieceIds, hintPiece)
+          }
         }
       }
 
@@ -385,6 +457,93 @@ export class CanvasRenderer {
       ctx.lineWidth = 1.0
       ctx.stroke()
       ctx.restore()
+    }
+
+    ctx.restore()
+  }
+
+  /**
+   * Draws a multi-piece cluster seamlessly with unified clipping so interior seams do not leak
+   */
+  private drawClusterGroup(
+    ctx: CanvasRenderingContext2D,
+    clusterPieces: PuzzlePiece[],
+    settings: UserSettings,
+    opacity: number,
+    isFlashing: boolean,
+    hasSelected: boolean,
+    selectedPieceIds: Set<number>,
+    hintPiece: PuzzlePiece | null
+  ): void {
+    if (clusterPieces.length === 0) return
+
+    ctx.save()
+    ctx.globalAlpha = opacity
+
+    // 1. Unified clip path of all pieces in this cluster
+    ctx.save()
+    ctx.beginPath()
+    for (const piece of clusterPieces) {
+      ctx.save()
+      const centerX = piece.x + piece.width / 2
+      const centerY = piece.y + piece.height / 2
+      ctx.translate(centerX, centerY)
+      if (piece.rotation !== 0) ctx.rotate((piece.rotation * Math.PI) / 180)
+      ctx.translate(-piece.width / 2, -piece.height / 2)
+      JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
+      ctx.restore()
+    }
+    ctx.clip()
+
+    // 2. Draw piece sprites inside the clip to dissolve internal seams
+    for (const piece of clusterPieces) {
+      const sprite = this.sprites.get(piece.id)
+      if (sprite) {
+        ctx.save()
+        const centerX = piece.x + piece.width / 2
+        const centerY = piece.y + piece.height / 2
+        ctx.translate(centerX, centerY)
+        if (piece.rotation !== 0) ctx.rotate((piece.rotation * Math.PI) / 180)
+        ctx.drawImage(
+          sprite.canvas,
+          -piece.width / 2 - sprite.offsetX,
+          -piece.height / 2 - sprite.offsetY
+        )
+        ctx.restore()
+      }
+    }
+    ctx.restore()
+
+    // 3. Highlight / flash effects along outer silhouettes if active
+    if (isFlashing || hasSelected) {
+      for (const piece of clusterPieces) {
+        const isPieceSelected = selectedPieceIds.has(piece.id) || (hintPiece !== null && piece.id === hintPiece.id)
+        if (isFlashing || isPieceSelected) {
+          ctx.save()
+          const centerX = piece.x + piece.width / 2
+          const centerY = piece.y + piece.height / 2
+          ctx.translate(centerX, centerY)
+          if (piece.rotation !== 0) ctx.rotate((piece.rotation * Math.PI) / 180)
+          ctx.translate(-piece.width / 2, -piece.height / 2)
+          ctx.beginPath()
+          JigsawGenerator.buildPiecePath(ctx, piece.width, piece.height, piece.jitterProfile)
+          if (isFlashing) {
+            ctx.strokeStyle = 'rgba(249, 210, 186, 0.95)'
+            ctx.lineWidth = 3
+            ctx.shadowColor = '#ffd8c0'
+            ctx.shadowBlur = 12
+            ctx.stroke()
+          }
+          if (isPieceSelected) {
+            ctx.strokeStyle = '#f9d2ba'
+            ctx.lineWidth = 3
+            ctx.shadowColor = '#5e3122'
+            ctx.shadowBlur = 10
+            ctx.stroke()
+          }
+          ctx.restore()
+        }
+      }
     }
 
     ctx.restore()

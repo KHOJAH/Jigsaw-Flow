@@ -73,9 +73,38 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const isSpacePressedRef = useRef<boolean>(false)
   const highestZIndexRef = useRef<number>(puzzle.pieces.length + 100)
 
+  const hasTriggeredVictoryRef = useRef<boolean>(puzzle.status === 'completed')
+
+  // Reactive Victory Detection: Automatically triggers completion whenever all pieces are placed
+  useEffect(() => {
+    if (puzzle.status === 'completed' || isAutoSolving || hasTriggeredVictoryRef.current) return
+
+    const allPlaced =
+      pieces.length > 0 &&
+      pieces.every(
+        (p) =>
+          !p.inTray &&
+          (p.isLockedToBoard ||
+            (p.rotation === 0 && Math.hypot(p.x - p.targetX, p.y - p.targetY) < 6))
+      )
+
+    if (allPlaced) {
+      hasTriggeredVictoryRef.current = true
+      audioEngine.playVictory()
+      const accuracy = Math.round(
+        (pieces.length / Math.max(movesCount, pieces.length)) * 100
+      )
+      onVictory({
+        solveTime: elapsedTime,
+        moves: movesCount,
+        accuracy: Math.min(100, Math.max(10, accuracy)),
+      })
+    }
+  }, [pieces, puzzle.status, isAutoSolving, elapsedTime, movesCount, onVictory])
+
   // Timer tick
   useEffect(() => {
-    if (puzzle.status === 'completed' || isAutoSolving) return
+    if (puzzle.status === 'completed' || isAutoSolving || hasTriggeredVictoryRef.current) return
 
     const timer = setInterval(() => {
       setElapsedTime((prev) => prev + 1)

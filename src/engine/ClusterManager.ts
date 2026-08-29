@@ -228,17 +228,22 @@ export class ClusterManager {
       }
     }
 
-    // Check if fully solved: all pieces on board, all belong to 1 cluster, rotation 0, and aligned to board
+    // If any piece is grounded to board, unify all grounded pieces to clusterId 0
+    if (isGroundedToBoard) {
+      for (const p of pieces) {
+        if (p.isLockedToBoard) {
+          p.clusterId = 0
+        }
+      }
+    }
+
+    // Check if fully solved: all pieces out of tray, all placed and aligned to target positions with rotation 0
     const allOut = pieces.every((p) => !p.inTray)
-    const firstCluster = pieces[0]?.clusterId
-    const singleCluster = pieces.every((p) => p.clusterId === firstCluster)
-    const correctRotation = pieces.every((p) => p.rotation === 0)
-    const onBoard = pieces.every(
-      (p) => Math.hypot(p.x - p.targetX, p.y - p.targetY) < 6
+    const allPlacedCorrectly = pieces.every(
+      (p) => p.isLockedToBoard || (p.rotation === 0 && Math.hypot(p.x - p.targetX, p.y - p.targetY) < 6)
     )
 
-    const isFullySolved =
-      allOut && singleCluster && correctRotation && onBoard && pieces.length > 0
+    const isFullySolved = allOut && allPlacedCorrectly && pieces.length > 0
 
     return {
       hasSnapped,
