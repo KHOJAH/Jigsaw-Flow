@@ -69,6 +69,20 @@ class AppUpdaterService {
     }
   }
 
+  private formatErrorMessage(err: any): string {
+    const raw = err?.message || String(err || '')
+    if (raw.includes('404') || raw.includes('latest.yml') || raw.includes('Cannot find')) {
+      return 'No new updates found. You are on the latest version.'
+    }
+    if (raw.includes('ERR_INTERNET_DISCONNECTED') || raw.includes('ENOTFOUND')) {
+      return 'Unable to reach GitHub. Please check your internet connection.'
+    }
+    if (raw.includes('ETIMEDOUT') || raw.includes('timeout')) {
+      return 'Connection timed out while checking for updates.'
+    }
+    return 'Unable to check for updates at this time.'
+  }
+
   private setupListeners() {
     autoUpdater.on('checking-for-update', () => {
       this.updateState({ status: 'checking', error: undefined })
@@ -117,12 +131,18 @@ class AppUpdaterService {
     })
 
     autoUpdater.on('error', (err) => {
-      // In dev mode or when no releases exist yet, don't crash
-      const errorMsg = err?.message || 'Unknown update error'
-      this.updateState({
-        status: 'error',
-        error: errorMsg,
-      })
+      const raw = err?.message || String(err || '')
+      if (raw.includes('404') || raw.includes('latest.yml')) {
+        this.updateState({
+          status: 'not-available',
+          error: undefined,
+        })
+      } else {
+        this.updateState({
+          status: 'error',
+          error: this.formatErrorMessage(err),
+        })
+      }
     })
   }
 
@@ -131,10 +151,18 @@ class AppUpdaterService {
       this.updateState({ status: 'checking', error: undefined })
       await autoUpdater.checkForUpdates()
     } catch (err: any) {
-      this.updateState({
-        status: 'error',
-        error: err?.message || 'Failed to check for updates',
-      })
+      const raw = err?.message || String(err || '')
+      if (raw.includes('404') || raw.includes('latest.yml')) {
+        this.updateState({
+          status: 'not-available',
+          error: undefined,
+        })
+      } else {
+        this.updateState({
+          status: 'error',
+          error: this.formatErrorMessage(err),
+        })
+      }
     }
     return this.status
   }

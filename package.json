@@ -1,6 +1,6 @@
 {
   "name": "jigsaw-flow",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "description": "Professional Desktop Jigsaw Puzzle Studio",
   "main": "dist-electron/main.js",

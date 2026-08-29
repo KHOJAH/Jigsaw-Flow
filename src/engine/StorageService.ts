@@ -1,7 +1,8 @@
-import { PuzzleSave, UserSettings } from '../types/puzzle'
+import { DailyStreak, PuzzleSave, UserSettings } from '../types/puzzle'
 
 const LOCAL_STORAGE_SAVES_KEY = 'jigsaw_flow_saves'
 const LOCAL_STORAGE_SETTINGS_KEY = 'jigsaw_flow_settings'
+const LOCAL_STORAGE_STREAK_KEY = 'jigsaw_flow_daily_streak'
 
 export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'light',
@@ -16,6 +17,18 @@ export const DEFAULT_SETTINGS: UserSettings = {
   allowAutoComplete: true,
   seamlessBlending: true,
   discordRPC: true,
+  soundscape: {
+    chimes: 40,
+    rain: 0,
+    fire: 0,
+    wind: 0,
+  },
+}
+
+export const DEFAULT_STREAK: DailyStreak = {
+  currentStreak: 0,
+  longestStreak: 0,
+  completedDates: [],
 }
 
 export class StorageService {
@@ -199,6 +212,63 @@ export class StorageService {
     } catch (err) {
       console.error('Error saving settings:', err)
     }
+  }
+
+  /**
+   * Load daily challenge streak & completed calendar dates
+   */
+  static loadDailyStreak(): DailyStreak {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_STREAK_KEY)
+      if (raw) {
+        return { ...DEFAULT_STREAK, ...JSON.parse(raw) }
+      }
+    } catch (err) {
+      console.error('Error loading streak:', err)
+    }
+    return { ...DEFAULT_STREAK }
+  }
+
+  /**
+   * Record a completed daily puzzle and calculate streak
+   */
+  static recordDailyCompletion(dateStr: string): DailyStreak {
+    const current = this.loadDailyStreak()
+    if (current.completedDates.includes(dateStr)) {
+      return current
+    }
+
+    const newCompleted = [...current.completedDates, dateStr]
+    
+    // Calculate streak
+    let currentStreak = 1
+    const today = new Date(dateStr)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+    if (current.lastCompletedDate === yesterdayStr) {
+      currentStreak = current.currentStreak + 1
+    } else if (current.lastCompletedDate === dateStr) {
+      currentStreak = current.currentStreak
+    }
+
+    const longestStreak = Math.max(current.longestStreak, currentStreak)
+
+    const updatedStreak: DailyStreak = {
+      currentStreak,
+      longestStreak,
+      lastCompletedDate: dateStr,
+      completedDates: newCompleted,
+    }
+
+    try {
+      localStorage.setItem(LOCAL_STORAGE_STREAK_KEY, JSON.stringify(updatedStreak))
+    } catch (err) {
+      console.error('Error saving streak:', err)
+    }
+
+    return updatedStreak
   }
 
   private static loadBrowserSaves(): PuzzleSave[] {

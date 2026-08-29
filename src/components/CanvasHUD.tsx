@@ -42,6 +42,7 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
 }) => {
   const [showGhostSlider, setShowGhostSlider] = useState(false)
   const [showKeybindHelp, setShowKeybindHelp] = useState(false)
+  const [showSoundscapeMixer, setShowSoundscapeMixer] = useState(false)
 
   const formatTimer = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600)
@@ -174,6 +175,217 @@ export const CanvasHUD: React.FC<CanvasHUDProps> = ({
               <span className="material-symbols-outlined text-lg">lightbulb</span>
             </button>
           )}
+
+          {/* Soundscape Audio Mixer Button & Popover */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowSoundscapeMixer(!showSoundscapeMixer)
+                setShowGhostSlider(false)
+              }}
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                showSoundscapeMixer || (settings.musicVolume > 0 && ((settings.soundscape?.rain ?? 0) > 0 || (settings.soundscape?.fire ?? 0) > 0 || (settings.soundscape?.wind ?? 0) > 0))
+                  ? 'bg-primary/20 text-primary ring-1 ring-primary/40'
+                  : 'text-on-surface-variant hover:bg-surface-variant'
+              }`}
+              title="Soundscape Atmosphere Mixer (Rain, Fire, Wind, Chimes)"
+            >
+              <span className="material-symbols-outlined text-lg">headphones</span>
+            </button>
+
+            {/* Soundscape Popover */}
+            {showSoundscapeMixer && (
+              <div className="absolute top-11 right-0 bg-surface-container/95 backdrop-blur-xl p-md rounded-2xl border border-outline-variant/30 dark:border-transparent shadow-2xl w-72 z-50 animate-in fade-in slide-in-from-top-2 duration-150 select-none">
+                <div className="flex justify-between items-center mb-md border-b border-outline-variant/20 pb-xs">
+                  <div className="flex items-center gap-1.5 text-primary font-bold text-xs">
+                    <span className="material-symbols-outlined text-base">graphic_eq</span>
+                    <span>Soundscape Mixer</span>
+                  </div>
+                  <button
+                    onClick={() => setShowSoundscapeMixer(false)}
+                    className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </div>
+
+                {/* Master Volume */}
+                <div className="mb-md bg-surface-container-low p-2 rounded-xl">
+                  <div className="flex justify-between text-xs font-semibold text-on-surface mb-1">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">volume_up</span>
+                      Master Ambient
+                    </span>
+                    <span>{settings.musicVolume}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.musicVolume}
+                    onChange={(e) => onUpdateSettings({ musicVolume: parseInt(e.target.value, 10) })}
+                    className="w-full cursor-pointer accent-primary"
+                  />
+                </div>
+
+                {/* 4 Sound Channels */}
+                <div className="space-y-2.5 mb-md">
+                  {/* Chimes */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-medium text-on-surface mb-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-primary">notifications_active</span>
+                        Focus Chimes
+                      </span>
+                      <span className="text-on-surface-variant">{settings.soundscape?.chimes ?? 40}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.soundscape?.chimes ?? 40}
+                      onChange={(e) =>
+                        onUpdateSettings({
+                          soundscape: {
+                            ...(settings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            chimes: parseInt(e.target.value, 10),
+                          },
+                        })
+                      }
+                      className="w-full cursor-pointer accent-primary h-1.5"
+                    />
+                  </div>
+
+                  {/* Rain */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-medium text-on-surface mb-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-blue-500">water_drop</span>
+                        Rain on Glass
+                      </span>
+                      <span className="text-on-surface-variant">{settings.soundscape?.rain ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.soundscape?.rain ?? 0}
+                      onChange={(e) =>
+                        onUpdateSettings({
+                          soundscape: {
+                            ...(settings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            rain: parseInt(e.target.value, 10),
+                          },
+                        })
+                      }
+                      className="w-full cursor-pointer accent-blue-500 h-1.5"
+                    />
+                  </div>
+
+                  {/* Fireplace */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-medium text-on-surface mb-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-amber-500">local_fire_department</span>
+                        Cozy Fireplace
+                      </span>
+                      <span className="text-on-surface-variant">{settings.soundscape?.fire ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.soundscape?.fire ?? 0}
+                      onChange={(e) =>
+                        onUpdateSettings({
+                          soundscape: {
+                            ...(settings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            fire: parseInt(e.target.value, 10),
+                          },
+                        })
+                      }
+                      className="w-full cursor-pointer accent-amber-500 h-1.5"
+                    />
+                  </div>
+
+                  {/* Wind / Forest */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-medium text-on-surface mb-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-emerald-500">air</span>
+                        Forest Wind
+                      </span>
+                      <span className="text-on-surface-variant">{settings.soundscape?.wind ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.soundscape?.wind ?? 0}
+                      onChange={(e) =>
+                        onUpdateSettings({
+                          soundscape: {
+                            ...(settings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            wind: parseInt(e.target.value, 10),
+                          },
+                        })
+                      }
+                      className="w-full cursor-pointer accent-emerald-500 h-1.5"
+                    />
+                  </div>
+                </div>
+
+                {/* Atmosphere Presets */}
+                <div className="pt-2 border-t border-outline-variant/20">
+                  <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                    Atmosphere Presets
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() =>
+                        onUpdateSettings({
+                          soundscape: { chimes: 50, rain: 0, fire: 0, wind: 15 },
+                        })
+                      }
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-surface hover:bg-surface-variant text-on-surface transition-colors cursor-pointer text-center"
+                    >
+                      Zen Garden
+                    </button>
+                    <button
+                      onClick={() =>
+                        onUpdateSettings({
+                          soundscape: { chimes: 15, rain: 75, fire: 0, wind: 10 },
+                        })
+                      }
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-surface hover:bg-surface-variant text-on-surface transition-colors cursor-pointer text-center"
+                    >
+                      Rainy Study
+                    </button>
+                    <button
+                      onClick={() =>
+                        onUpdateSettings({
+                          soundscape: { chimes: 20, rain: 10, fire: 75, wind: 0 },
+                        })
+                      }
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-surface hover:bg-surface-variant text-on-surface transition-colors cursor-pointer text-center"
+                    >
+                      Cozy Cabin
+                    </button>
+                    <button
+                      onClick={() =>
+                        onUpdateSettings({
+                          soundscape: { chimes: 0, rain: 85, fire: 25, wind: 60 },
+                        })
+                      }
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-surface hover:bg-surface-variant text-on-surface transition-colors cursor-pointer text-center"
+                    >
+                      Night Storm
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Zoom Controls */}
           <div className="h-5 w-px bg-outline-variant/40 mx-0.5" />

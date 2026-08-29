@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ActiveNavTab,
+  DailyStreak,
   PuzzleCutStyle,
   PuzzlePiece,
   PuzzleSave,
@@ -53,12 +54,20 @@ export const App: React.FC = () => {
     accuracy: number
   }>({ solveTime: 0, moves: 0, accuracy: 100 })
 
+  // Daily Challenge streak state
+  const [dailyStreak, setDailyStreak] = useState<DailyStreak>(() => StorageService.loadDailyStreak())
+
   // Auto-updater state
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | undefined>(undefined)
 
   // Load saved puzzles, set audio, and listen for auto-updates on mount
   useEffect(() => {
     audioEngine.setVolumes(settings.sfxVolume, settings.musicVolume)
+    if (settings.soundscape) {
+      audioEngine.setSoundscapeVolumes(settings.soundscape)
+    }
+
+    setDailyStreak(StorageService.loadDailyStreak())
 
     StorageService.loadSaves().then((loadedSaves) => {
       setSaves(loadedSaves)
@@ -78,6 +87,20 @@ export const App: React.FC = () => {
       return cleanupUpdater
     }
   }, [])
+
+  // Sync ambient soundscape audio with active workspace
+  useEffect(() => {
+    audioEngine.setVolumes(settings.sfxVolume, settings.musicVolume)
+    if (settings.soundscape) {
+      audioEngine.setSoundscapeVolumes(settings.soundscape)
+    }
+
+    if (activeTab === 'workspace' && activePuzzle) {
+      audioEngine.startAmbientMusic()
+    } else {
+      audioEngine.stopAmbientMusic()
+    }
+  }, [activeTab, activePuzzle?.id, settings.musicVolume, settings.sfxVolume, settings.soundscape])
 
   // Auto-updater trigger functions
   const handleCheckForUpdates = async () => {
@@ -226,8 +249,23 @@ export const App: React.FC = () => {
   const handleSelectImage = (
     imageSrc: string,
     title: string = 'Custom Jigsaw',
-    defaultPieces: number = 48
+    defaultPieces: number = 48,
+    isDaily: boolean = false,
+    dailyDate?: string
   ) => {
+    if (isDaily) {
+      // Launch Daily Challenge immediately with balanced 75 pieces and standard cut
+      handleStartPuzzle({
+        title,
+        imageSrc,
+        pieceCount: defaultPieces || 75,
+        enableRotation: false,
+        cutStyle: 'classic',
+        aspectRatio: '16:9',
+      })
+      return
+    }
+
     setImportImageSrc(imageSrc)
     setImportInitialTitle(cleanBaseTitle(title))
     setImportInitialPieces(defaultPieces)
@@ -393,6 +431,13 @@ export const App: React.FC = () => {
       updatedAt: new Date().toISOString(),
     }
 
+    // Record daily challenge completion
+    if (activePuzzle.title.includes('Daily Challenge') || activePuzzle.id.startsWith('daily-')) {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const updatedStreak = StorageService.recordDailyCompletion(todayStr)
+      setDailyStreak(updatedStreak)
+    }
+
     setVictoryStats(stats)
     setIsVictoryModalOpen(true)
     handleUpdatePuzzle(completedSave)
@@ -461,6 +506,7 @@ export const App: React.FC = () => {
               recentSaves={recentSaves}
               completedSaves={completedSaves}
               activePuzzle={activePuzzle}
+              dailyStreak={dailyStreak}
               theme={settings.theme}
               onToggleTheme={handleToggleTheme}
               onResumePuzzle={handleResumePuzzle}

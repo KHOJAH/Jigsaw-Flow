@@ -25,7 +25,7 @@
       }
     ],
     "icon": "build/icon.ico",
-    "artifactName": "${productName}-Setup-${version}.${ext}"
+    "artifactName": "Jigsaw-Flow-Setup-${version}.${ext}"
   },
   "nsis": {
     "oneClick": false,

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { SnapSensitivity, TableSurface, UpdateStatus, UserSettings } from '../types/puzzle'
 import { audioEngine } from '../engine/AudioEngine'
-import { StorageService } from '../engine/StorageService'
+import { DEFAULT_SETTINGS, StorageService } from '../engine/StorageService'
 
 interface SettingsModalProps {
   settings: UserSettings
@@ -53,22 +53,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }
 
   const handleReset = () => {
-    const def: UserSettings = {
-      theme: 'light',
-      musicVolume: 40,
-      sfxVolume: 85,
-      snapSensitivity: 'medium' as SnapSensitivity,
-      dragInertia: true,
-      tableSurface: 'felt' as TableSurface,
-      edgeHighlight: 30,
-      showGhostOverlay: false,
-      ghostOpacity: 25,
-      allowAutoComplete: true,
-      seamlessBlending: true,
-      discordRPC: true,
-    }
+    const def: UserSettings = { ...DEFAULT_SETTINGS }
     setLocalSettings(def)
     audioEngine.setVolumes(def.sfxVolume, def.musicVolume)
+    audioEngine.setSoundscapeVolumes(def.soundscape)
     onSaveSettings(def)
     StorageService.saveSettings(def)
   }
@@ -224,6 +212,132 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <p className="font-label-sm text-xs text-on-surface-variant mt-xs">
                   Controls the volume of piece pickup clicks, table drops, and magnetic snaps.
                 </p>
+              </div>
+
+              {/* Soundscape Atmosphere Layers */}
+              <div className="pt-md border-t border-outline-variant/20">
+                <h4 className="font-body-md font-bold text-on-surface text-sm mb-3 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-primary text-base">headphones</span>
+                  Atmospheric Soundscape Layers
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                  {/* Chimes */}
+                  <div className="bg-surface-container-low p-2.5 rounded-xl">
+                    <div className="flex justify-between text-xs font-semibold text-on-surface mb-1">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm text-primary">notifications_active</span>
+                        Focus Chimes
+                      </span>
+                      <span>{localSettings.soundscape?.chimes ?? 40}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={localSettings.soundscape?.chimes ?? 40}
+                      onChange={(e) => {
+                        const next = {
+                          ...localSettings,
+                          soundscape: {
+                            ...(localSettings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            chimes: parseInt(e.target.value, 10),
+                          },
+                        }
+                        setLocalSettings(next)
+                        audioEngine.setSoundscapeVolumes(next.soundscape)
+                      }}
+                      className="w-full cursor-pointer accent-primary h-1.5"
+                    />
+                  </div>
+
+                  {/* Rain */}
+                  <div className="bg-surface-container-low p-2.5 rounded-xl">
+                    <div className="flex justify-between text-xs font-semibold text-on-surface mb-1">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm text-blue-500">water_drop</span>
+                        Rain on Glass
+                      </span>
+                      <span>{localSettings.soundscape?.rain ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={localSettings.soundscape?.rain ?? 0}
+                      onChange={(e) => {
+                        const next = {
+                          ...localSettings,
+                          soundscape: {
+                            ...(localSettings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            rain: parseInt(e.target.value, 10),
+                          },
+                        }
+                        setLocalSettings(next)
+                        audioEngine.setSoundscapeVolumes(next.soundscape)
+                      }}
+                      className="w-full cursor-pointer accent-blue-500 h-1.5"
+                    />
+                  </div>
+
+                  {/* Fireplace */}
+                  <div className="bg-surface-container-low p-2.5 rounded-xl">
+                    <div className="flex justify-between text-xs font-semibold text-on-surface mb-1">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm text-amber-500">local_fire_department</span>
+                        Cozy Fireplace
+                      </span>
+                      <span>{localSettings.soundscape?.fire ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={localSettings.soundscape?.fire ?? 0}
+                      onChange={(e) => {
+                        const next = {
+                          ...localSettings,
+                          soundscape: {
+                            ...(localSettings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            fire: parseInt(e.target.value, 10),
+                          },
+                        }
+                        setLocalSettings(next)
+                        audioEngine.setSoundscapeVolumes(next.soundscape)
+                      }}
+                      className="w-full cursor-pointer accent-amber-500 h-1.5"
+                    />
+                  </div>
+
+                  {/* Wind */}
+                  <div className="bg-surface-container-low p-2.5 rounded-xl">
+                    <div className="flex justify-between text-xs font-semibold text-on-surface mb-1">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm text-emerald-500">air</span>
+                        Forest Wind
+                      </span>
+                      <span>{localSettings.soundscape?.wind ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={localSettings.soundscape?.wind ?? 0}
+                      onChange={(e) => {
+                        const next = {
+                          ...localSettings,
+                          soundscape: {
+                            ...(localSettings.soundscape || { chimes: 40, rain: 0, fire: 0, wind: 0 }),
+                            wind: parseInt(e.target.value, 10),
+                          },
+                        }
+                        setLocalSettings(next)
+                        audioEngine.setSoundscapeVolumes(next.soundscape)
+                      }}
+                      className="w-full cursor-pointer accent-emerald-500 h-1.5"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </section>

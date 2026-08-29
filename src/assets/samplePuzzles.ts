@@ -1,3 +1,5 @@
+import { PuzzleCategory } from '../types/puzzle'
+
 export interface SamplePuzzle {
   id: string
   title: string
@@ -5,6 +7,61 @@ export interface SamplePuzzle {
   pieceCount: number
   description: string
   category: string
+  categoryKey?: PuzzleCategory
+}
+
+export const CATEGORY_FILTERS: { key: PuzzleCategory; label: string; icon: string }[] = [
+  { key: 'all', label: 'All Collections', icon: 'grid_view' },
+  { key: 'masterpieces', label: 'Fine Art & Masters', icon: 'palette' },
+  { key: 'nature', label: 'Nature & Wildlife', icon: 'forest' },
+  { key: 'cozy', label: 'Cozy & Landmarks', icon: 'cottage' },
+  { key: 'abstract', label: 'Cosmic & Abstract', icon: 'blur_on' },
+]
+
+/**
+ * Deterministically picks a daily puzzle based on date string (YYYY-MM-DD)
+ */
+export function getDailyPuzzleForDate(targetDate: Date = new Date()): {
+  puzzle: SamplePuzzle
+  dateStr: string
+  formattedDate: string
+  dayOfMonth: number
+  dayName: string
+  monthName: string
+} {
+  const y = targetDate.getFullYear()
+  const m = String(targetDate.getMonth() + 1).padStart(2, '0')
+  const d = String(targetDate.getDate()).padStart(2, '0')
+  const dateStr = `${y}-${m}-${d}`
+
+  // Simple seed generator from date string
+  let seed = 0
+  for (let i = 0; i < dateStr.length; i++) {
+    seed = (seed << 5) - seed + dateStr.charCodeAt(i)
+    seed |= 0
+  }
+  const index = Math.abs(seed) % SAMPLE_PUZZLES.length
+  const base = SAMPLE_PUZZLES[index]
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  return {
+    puzzle: {
+      ...base,
+      id: `daily-${dateStr}`,
+      title: `${base.title} (Daily Challenge)`,
+      pieceCount: 75, // balanced standard daily piece count
+    },
+    dateStr,
+    formattedDate: `${monthNames[targetDate.getMonth()]} ${targetDate.getDate()}, ${targetDate.getFullYear()}`,
+    dayOfMonth: targetDate.getDate(),
+    dayName: dayNames[targetDate.getDay()],
+    monthName: monthNames[targetDate.getMonth()],
+  }
 }
 
 export const SAMPLE_PUZZLES: SamplePuzzle[] = [

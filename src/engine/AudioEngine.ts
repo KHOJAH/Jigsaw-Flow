@@ -1,14 +1,40 @@
+import { SoundscapeVolumes } from '../types/puzzle'
+
 /**
- * Procedural Web Audio Synthesizer
- * Zero external audio assets required. Generates realistic wooden jigsaw clicks,
- * magnetic snaps, and celebratory victory fanfares in real-time.
+ * Procedural Multi-Channel Web Audio Synthesizer
+ * Zero external audio assets required.
+ * Generates realistic wooden clicks, tactile snaps, celebratory fanfares,
+ * and 4 procedural ambient soundscapes: Focus Chimes, Rain, Fireplace, Wind.
  */
 class AudioEngine {
   private ctx: AudioContext | null = null
   private sfxVolume: number = 0.85
   private musicVolume: number = 0.4
-  private isMusicPlaying: boolean = false
-  private ambientInterval: number | null = null
+  private isSoundscapePlaying: boolean = false
+
+  // Soundscape channel volumes (0.0 to 1.0)
+  private channelVolumes = {
+    chimes: 0.4,
+    rain: 0.0,
+    fire: 0.0,
+    wind: 0.0,
+  }
+
+  // Audio nodes for continuous soundscapes
+  private rainSource: AudioBufferSourceNode | null = null
+  private rainGain: GainNode | null = null
+  private rainFilter: BiquadFilterNode | null = null
+
+  private windSource: AudioBufferSourceNode | null = null
+  private windGain: GainNode | null = null
+  private windFilter: BiquadFilterNode | null = null
+  private windLfo: OscillatorNode | null = null
+
+  private fireSource: AudioBufferSourceNode | null = null
+  private fireGain: GainNode | null = null
+  private fireCrackleInterval: number | null = null
+
+  private chimesInterval: number | null = null
 
   private initContext() {
     if (!this.ctx) {
@@ -25,6 +51,238 @@ class AudioEngine {
   public setVolumes(sfx: number, music: number) {
     this.sfxVolume = Math.max(0, Math.min(1, sfx / 100))
     this.musicVolume = Math.max(0, Math.min(1, music / 100))
+    this.updateSoundscapeGains()
+  }
+
+  public setSoundscapeVolumes(volumes: SoundscapeVolumes) {
+    this.channelVolumes = {
+      chimes: Math.max(0, Math.min(1, (volumes.chimes ?? 40) / 100)),
+      rain: Math.max(0, Math.min(1, (volumes.rain ?? 0) / 100)),
+      fire: Math.max(0, Math.min(1, (volumes.fire ?? 0) / 100)),
+      wind: Math.max(0, Math.min(1, (volumes.wind ?? 0) / 100)),
+    }
+    this.updateSoundscapeGains()
+  }
+
+  private updateSoundscapeGains() {
+    if (!this.ctx || !this.isSoundscapePlaying) return
+    const now = this.ctx.currentTime
+
+    const masterGain = this.musicVolume
+
+    if (this.rainGain) {
+      this.rainGain.gain.setTargetAtTime(this.channelVolumes.rain * masterGain * 0.45, now, 0.1)
+    }
+    if (this.windGain) {
+      this.windGain.gain.setTargetAtTime(this.channelVolumes.wind * masterGain * 0.35, now, 0.1)
+    }
+    if (this.fireGain) {
+      this.fireGain.gain.setTargetAtTime(this.channelVolumes.fire * masterGain * 0.35, now, 0.1)
+    }
+  }
+
+  /**
+   * Generates a seamless buffer of pink noise for rain and wind
+   */
+  private createPinkNoiseBuffer(durationSeconds: number = 4): AudioBuffer {
+    if (!this.ctx) throw new Error('AudioContext missing')
+    const sampleRate = this.ctx.sampleRate
+    const bufferSize = sampleRate * durationSeconds
+    const buffer = this.ctx.createBuffer(2, bufferSize, sampleRate)
+
+    for (let channel = 0; channel < 2; channel++) {
+      const data = buffer.getChannelData(channel)
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1
+        b0 = 0.99886 * b0 + white * 0.0555179
+        b1 = 0.99332 * b1 + white * 0.0750759
+        b2 = 0.96900 * b2 + white * 0.1538520
+        b3 = 0.86650 * b3 + white * 0.3104856
+        b4 = 0.55000 * b4 + white * 0.5329522
+        b5 = -0.7616 * b5 - white * 0.0168980
+        data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.08
+        b6 = white * 0.115926
+      }
+    }
+    return buffer
+  }
+
+  /**
+   * Starts all active procedural soundscape channels
+   */
+  public startAmbientMusic() {
+    if (this.isSoundscapePlaying) return
+    this.isSoundscapePlaying = true
+    this.initContext()
+    if (!this.ctx) return
+
+    const now = this.ctx.currentTime
+
+    // 1. Setup Rain Synth (Pink noise through lowpass filter)
+    try {
+      const rainBuffer = this.createPinkNoiseBuffer(5)
+      this.rainSource = this.ctx.createBufferSource()
+      this.rainSource.buffer = rainBuffer
+      this.rainSource.loop = true
+
+      this.rainFilter = this.ctx.createBiquadFilter()
+      this.rainFilter.type = 'lowpass'
+      this.rainFilter.frequency.setValueAtTime(1400, now)
+
+      this.rainGain = this.ctx.createGain()
+      this.rainGain.gain.setValueAtTime(this.channelVolumes.rain * this.musicVolume * 0.45, now)
+
+      this.rainSource.connect(this.rainFilter)
+      this.rainFilter.connect(this.rainGain)
+      this.rainGain.connect(this.ctx.destination)
+      this.rainSource.start(now)
+    } catch {
+      // ignore
+    }
+
+    // 2. Setup Wind Synth (Pink noise through LFO-swept bandpass)
+    try {
+      const windBuffer = this.createPinkNoiseBuffer(6)
+      this.windSource = this.ctx.createBufferSource()
+      this.windSource.buffer = windBuffer
+      this.windSource.loop = true
+
+      this.windFilter = this.ctx.createBiquadFilter()
+      this.windFilter.type = 'bandpass'
+      this.windFilter.frequency.setValueAtTime(380, now)
+      this.windFilter.Q.setValueAtTime(2.2, now)
+
+      // LFO for slow wind gusts
+      this.windLfo = this.ctx.createOscillator()
+      this.windLfo.frequency.setValueAtTime(0.12, now) // 8 second gentle gust cycle
+      const lfoGain = this.ctx.createGain()
+      lfoGain.gain.setValueAtTime(160, now)
+      this.windLfo.connect(lfoGain)
+      lfoGain.connect(this.windFilter.frequency)
+
+      this.windGain = this.ctx.createGain()
+      this.windGain.gain.setValueAtTime(this.channelVolumes.wind * this.musicVolume * 0.35, now)
+
+      this.windSource.connect(this.windFilter)
+      this.windFilter.connect(this.windGain)
+      this.windGain.connect(this.ctx.destination)
+
+      this.windSource.start(now)
+      this.windLfo.start(now)
+    } catch {
+      // ignore
+    }
+
+    // 3. Setup Fireplace Synth (warm low rumble + randomized crackle pops)
+    try {
+      const fireBuffer = this.createPinkNoiseBuffer(4)
+      this.fireSource = this.ctx.createBufferSource()
+      this.fireSource.buffer = fireBuffer
+      this.fireSource.loop = true
+
+      const fireFilter = this.ctx.createBiquadFilter()
+      fireFilter.type = 'lowpass'
+      fireFilter.frequency.setValueAtTime(450, now)
+
+      this.fireGain = this.ctx.createGain()
+      this.fireGain.gain.setValueAtTime(this.channelVolumes.fire * this.musicVolume * 0.35, now)
+
+      this.fireSource.connect(fireFilter)
+      fireFilter.connect(this.fireGain)
+      this.fireGain.connect(this.ctx.destination)
+      this.fireSource.start(now)
+
+      // Random fireplace crackle pops
+      this.fireCrackleInterval = window.setInterval(() => {
+        if (!this.ctx || !this.isSoundscapePlaying || this.channelVolumes.fire <= 0 || this.musicVolume <= 0) return
+        if (Math.random() > 0.6) return
+
+        const t = this.ctx.currentTime
+        const popOsc = this.ctx.createOscillator()
+        const popGain = this.ctx.createGain()
+
+        popOsc.type = 'triangle'
+        popOsc.frequency.setValueAtTime(1200 + Math.random() * 2000, t)
+        popOsc.frequency.exponentialRampToValueAtTime(100, t + 0.015)
+
+        popGain.gain.setValueAtTime(0.08 * this.channelVolumes.fire * this.musicVolume, t)
+        popGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.018)
+
+        popOsc.connect(popGain)
+        popGain.connect(this.ctx.destination)
+        popOsc.start(t)
+        popOsc.stop(t + 0.02)
+      }, 250)
+    } catch {
+      // ignore
+    }
+
+    // 4. Setup Chimes (Pentatonic harmony progressions)
+    const pentatonicScale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25]
+    this.chimesInterval = window.setInterval(() => {
+      if (!this.ctx || !this.isSoundscapePlaying || this.channelVolumes.chimes <= 0 || this.musicVolume <= 0) return
+      if (Math.random() > 0.45) return
+
+      const freq = pentatonicScale[Math.floor(Math.random() * pentatonicScale.length)]
+      const t = this.ctx.currentTime
+
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, t)
+
+      const volume = 0.08 * this.channelVolumes.chimes * this.musicVolume
+      gain.gain.setValueAtTime(volume, t)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 3.2)
+
+      osc.connect(gain)
+      gain.connect(this.ctx.destination)
+      osc.start(t)
+      osc.stop(t + 3.3)
+    }, 2000)
+  }
+
+  /**
+   * Stops all ambient soundscapes cleanly
+   */
+  public stopAmbientMusic() {
+    this.isSoundscapePlaying = false
+
+    if (this.chimesInterval) {
+      clearInterval(this.chimesInterval)
+      this.chimesInterval = null
+    }
+    if (this.fireCrackleInterval) {
+      clearInterval(this.fireCrackleInterval)
+      this.fireCrackleInterval = null
+    }
+
+    try {
+      if (this.rainSource) {
+        this.rainSource.stop()
+        this.rainSource.disconnect()
+        this.rainSource = null
+      }
+      if (this.windSource) {
+        this.windSource.stop()
+        this.windSource.disconnect()
+        this.windSource = null
+      }
+      if (this.windLfo) {
+        this.windLfo.stop()
+        this.windLfo.disconnect()
+        this.windLfo = null
+      }
+      if (this.fireSource) {
+        this.fireSource.stop()
+        this.fireSource.disconnect()
+        this.fireSource = null
+      }
+    } catch {
+      // ignore
+    }
   }
 
   /**
@@ -217,7 +475,6 @@ class AudioEngine {
     this.initContext()
     if (!this.ctx) return
 
-    // C Major 9 chord: C4, E4, G4, B4, D5, G5
     const notes = [261.63, 329.63, 392.0, 493.88, 587.33, 783.99]
     const startTime = this.ctx.currentTime
 
@@ -225,18 +482,15 @@ class AudioEngine {
       if (!this.ctx) return
       const noteTime = startTime + index * 0.12
 
-      // Fundamental oscillator
       const osc = this.ctx.createOscillator()
       const gain = this.ctx.createGain()
 
       osc.type = 'sine'
       osc.frequency.setValueAtTime(freq, noteTime)
 
-      // Bell-like decay envelope
       gain.gain.setValueAtTime(0.28 * this.sfxVolume, noteTime)
       gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 1.6)
 
-      // Harmonic overtone
       const overtone = this.ctx.createOscillator()
       const overtoneGain = this.ctx.createGain()
       overtone.type = 'triangle'
@@ -254,47 +508,6 @@ class AudioEngine {
       osc.stop(noteTime + 1.8)
       overtone.stop(noteTime + 0.9)
     })
-  }
-
-  /**
-   * Starts peaceful procedural ambient wind chime tones
-   */
-  public startAmbientMusic() {
-    if (this.isMusicPlaying) return
-    this.isMusicPlaying = true
-    this.initContext()
-
-    const pentatonicScale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25]
-
-    this.ambientInterval = window.setInterval(() => {
-      if (!this.ctx || this.musicVolume <= 0 || !this.isMusicPlaying) return
-      if (Math.random() > 0.4) return
-
-      const freq = pentatonicScale[Math.floor(Math.random() * pentatonicScale.length)]
-      const now = this.ctx.currentTime
-
-      const osc = this.ctx.createOscillator()
-      const gain = this.ctx.createGain()
-
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, now)
-
-      gain.gain.setValueAtTime(0.04 * this.musicVolume, now)
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0)
-
-      osc.connect(gain)
-      gain.connect(this.ctx.destination)
-      osc.start(now)
-      osc.stop(now + 3.2)
-    }, 1800)
-  }
-
-  public stopAmbientMusic() {
-    this.isMusicPlaying = false
-    if (this.ambientInterval) {
-      clearInterval(this.ambientInterval)
-      this.ambientInterval = null
-    }
   }
 }
 

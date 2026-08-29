@@ -1,17 +1,23 @@
 import React, { useState } from 'react'
-import { PuzzleSave } from '../types/puzzle'
-import { SAMPLE_PUZZLES, SamplePuzzle } from '../assets/samplePuzzles'
+import { DailyStreak, PuzzleSave } from '../types/puzzle'
+import {
+  CATEGORY_FILTERS,
+  SAMPLE_PUZZLES,
+  SamplePuzzle,
+  getDailyPuzzleForDate,
+} from '../assets/samplePuzzles'
 
 interface LibraryViewProps {
   recentSaves: PuzzleSave[]
   completedSaves: PuzzleSave[]
   activePuzzle: PuzzleSave | null
+  dailyStreak: DailyStreak
   theme?: string
   onToggleTheme?: () => void
   onResumePuzzle: (save: PuzzleSave) => void
   onReplayPuzzle: (save: PuzzleSave) => void
   onDeleteSave: (id: string) => void
-  onSelectImage: (imageSrc: string, title?: string, defaultPieces?: number) => void
+  onSelectImage: (imageSrc: string, title?: string, defaultPieces?: number, isDaily?: boolean, dailyDate?: string) => void
   onOpenBrowseFiles: () => void
 }
 
@@ -19,6 +25,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   recentSaves,
   completedSaves,
   activePuzzle,
+  dailyStreak,
   theme,
   onToggleTheme,
   onResumePuzzle,
@@ -31,6 +38,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [inspectImage, setInspectImage] = useState<PuzzleSave | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false)
+  const [calendarMonthOffset, setCalendarMonthOffset] = useState<number>(0)
+
+  // Today's Daily Challenge
+  const todayInfo = getDailyPuzzleForDate(new Date())
+  const isTodayCompleted = dailyStreak.completedDates.includes(todayInfo.dateStr)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -82,10 +95,25 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   })
 
   const filteredSamples = SAMPLE_PUZZLES.filter((s) => {
-    if (categoryFilter !== 'all' && categoryFilter.toLowerCase() !== s.category.toLowerCase()) return false
+    if (categoryFilter !== 'all') {
+      if (categoryFilter === 'masterpieces' && s.category !== 'Fine Art') return false
+      if (categoryFilter === 'nature' && s.category !== 'Nature & Landscapes' && s.category !== 'Wildlife & Animals') return false
+      if (categoryFilter === 'cozy' && s.category !== 'World Architecture') return false
+      if (categoryFilter === 'abstract' && s.category !== 'Space & Cosmic') return false
+      if (!['masterpieces', 'nature', 'cozy', 'abstract'].includes(categoryFilter) && categoryFilter.toLowerCase() !== s.category.toLowerCase()) return false
+    }
     if (!q) return true
     return s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)
   })
+
+  // Calendar calculations
+  const now = new Date()
+  const displayDate = new Date(now.getFullYear(), now.getMonth() + calendarMonthOffset, 1)
+  const currentYear = displayDate.getFullYear()
+  const currentMonth = displayDate.getMonth()
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay()
+  const monthName = displayDate.toLocaleString('default', { month: 'long' })
 
   return (
     <div className="flex-1 overflow-y-auto p-lg md:p-xl bg-background text-on-background">
@@ -95,7 +123,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="flex flex-col gap-xs">
             <h1 className="font-display-lg text-display-lg text-primary font-bold">Library</h1>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
-              Create custom jigsaw puzzles from your images and manage your collection.
+              Explore curated art packs, daily challenges, and custom jigsaw puzzles.
             </p>
           </div>
 
@@ -106,7 +134,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             </span>
             <input
               type="text"
-              placeholder="Search puzzles & categories..."
+              placeholder="Search puzzles & collections..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-surface-container pl-10 pr-9 py-2 rounded-2xl border border-outline-variant/40 dark:border-transparent text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs transition-all"
@@ -122,46 +150,136 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </div>
         </div>
 
-        {/* Dynamic Category Pills Filter Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-semibold select-none">
-          {[
-            'all',
-            'in-progress',
-            'completed',
-            ...Array.from(new Set(SAMPLE_PUZZLES.map((s) => s.category))),
-          ].map((cat) => {
-            const isSelected = categoryFilter.toLowerCase() === cat.toLowerCase()
-            const sampleCount =
-              cat === 'all'
-                ? SAMPLE_PUZZLES.length
-                : cat === 'in-progress'
-                ? recentSaves.length
-                : cat === 'completed'
-                ? completedSaves.length
-                : SAMPLE_PUZZLES.filter((s) => s.category.toLowerCase() === cat.toLowerCase()).length
+        {/* Featured Daily Challenge Banner */}
+        <section className="bg-gradient-to-r from-primary/15 via-surface-container to-secondary/15 rounded-2xl p-lg border border-primary/25 shadow-sm relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-lg relative z-10">
+            {/* Left: Thumbnail & Badges */}
+            <div className="flex items-center gap-md">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-md border-2 border-primary/30 flex-shrink-0 bg-surface-variant group">
+                <img
+                  src={todayInfo.puzzle.imageSrc}
+                  alt={todayInfo.puzzle.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] px-2 py-0.5 rounded-full shadow-md flex items-center gap-0.5">
+                  <span className="material-symbols-outlined text-[11px]">star</span>
+                  <span>DAILY</span>
+                </div>
+              </div>
 
-            const label =
-              cat === 'all'
-                ? `All (${SAMPLE_PUZZLES.length})`
-                : cat === 'in-progress'
-                ? `In Progress (${recentSaves.length})`
-                : cat === 'completed'
-                ? `Completed (${completedSaves.length})`
-                : `${cat} (${sampleCount})`
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">
+                    {todayInfo.formattedDate}
+                  </span>
+                  {isTodayCompleted && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">check_circle</span>
+                      Completed
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="font-headline-md text-lg sm:text-xl font-bold text-on-surface truncate max-w-md">
+                  {todayInfo.puzzle.title.replace(' (Daily Challenge)', '')}
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-0.5 max-w-lg line-clamp-1">
+                  {todayInfo.puzzle.description}
+                </p>
+
+                {/* Streak Counters */}
+                <div className="flex items-center gap-3 mt-2 text-xs font-semibold text-on-surface-variant">
+                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                    <span className="material-symbols-outlined text-base">local_fire_department</span>
+                    {dailyStreak.currentStreak} Day Streak
+                  </span>
+                  <span>•</span>
+                  <span>Best: {dailyStreak.longestStreak} Days</span>
+                  <span>•</span>
+                  <span>75 Pieces</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2 self-end md:self-center">
+              <button
+                onClick={() => setShowCalendarModal(true)}
+                className="px-md py-2 bg-surface hover:bg-surface-variant text-on-surface rounded-xl font-semibold text-xs border border-outline-variant/40 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="View Calendar & Past Daily Puzzles"
+              >
+                <span className="material-symbols-outlined text-base">calendar_month</span>
+                <span>Past Challenges</span>
+              </button>
+
+              <button
+                onClick={() =>
+                  onSelectImage(
+                    todayInfo.puzzle.imageSrc,
+                    todayInfo.puzzle.title,
+                    todayInfo.puzzle.pieceCount,
+                    true,
+                    todayInfo.dateStr
+                  )
+                }
+                className="px-lg py-2 bg-primary text-on-primary hover:bg-primary-container font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">
+                  {isTodayCompleted ? 'replay' : 'play_arrow'}
+                </span>
+                <span>{isTodayCompleted ? 'Replay Today' : 'Play Daily Puzzle'}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Category Pills Filter Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-semibold select-none">
+          {CATEGORY_FILTERS.map((cat) => {
+            const isSelected = categoryFilter === cat.key
             return (
               <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                key={cat.key}
+                onClick={() => setCategoryFilter(cat.key)}
+                className={`px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-primary text-on-primary dark:bg-emerald-500/20 dark:text-emerald-300 shadow-xs font-bold ring-1 ring-primary/30'
+                    ? 'bg-primary text-on-primary shadow-xs font-bold ring-1 ring-primary/30'
                     : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
                 }`}
               >
-                {label}
+                <span className="material-symbols-outlined text-base">{cat.icon}</span>
+                <span>{cat.label}</span>
               </button>
             )
           })}
+
+          {recentSaves.length > 0 && (
+            <button
+              onClick={() => setCategoryFilter('in-progress')}
+              className={`px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                categoryFilter === 'in-progress'
+                  ? 'bg-primary text-on-primary shadow-xs font-bold'
+                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">pending</span>
+              <span>In Progress ({recentSaves.length})</span>
+            </button>
+          )}
+
+          {completedSaves.length > 0 && (
+            <button
+              onClick={() => setCategoryFilter('completed')}
+              className={`px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                categoryFilter === 'completed'
+                  ? 'bg-primary text-on-primary shadow-xs font-bold'
+                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">emoji_events</span>
+              <span>Completed ({completedSaves.length})</span>
+            </button>
+          )}
         </div>
 
         {/* Bento Grid Layout */}
@@ -172,36 +290,36 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={onOpenBrowseFiles}
-            className={`col-span-1 md:col-span-8 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-xl min-h-[280px] cursor-pointer group shadow-sm ${
+            className={`col-span-1 md:col-span-8 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-xl min-h-[260px] cursor-pointer group shadow-sm ${
               isDraggingOver
                 ? 'border-primary bg-primary-fixed/30 scale-[1.01]'
                 : 'border-outline-variant dark:border-white/10 bg-surface-container hover:border-primary hover:bg-surface-container-high'
             }`}
           >
-            <div className="w-16 h-16 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-md group-hover:scale-110 transition-transform shadow-sm">
-              <span className="material-symbols-outlined text-[32px]">upload_file</span>
+            <div className="w-14 h-14 rounded-2xl bg-secondary-container text-on-secondary-container flex items-center justify-center mb-md group-hover:scale-110 transition-transform shadow-sm">
+              <span className="material-symbols-outlined text-[28px]">upload_file</span>
             </div>
             <h3 className="font-headline-md text-headline-md text-primary mb-xs font-semibold">
-              Drag & Drop Your Image Here
+              Create Puzzle from Your Image
             </h3>
             <p className="font-body-md text-body-md text-on-surface-variant text-center max-w-sm mb-md">
-              Turn any high-resolution photo or artwork into an interactive jigsaw puzzle.
+              Drag and drop any picture, wallpaper, or photo to generate a custom jigsaw.
             </p>
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 onOpenBrowseFiles()
               }}
-              className="bg-secondary text-on-secondary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-secondary/90 transition-all shadow-sm active:scale-95"
+              className="bg-secondary text-on-secondary font-label-md text-label-md px-lg py-sm rounded-xl hover:bg-secondary/90 transition-all shadow-sm active:scale-95 cursor-pointer font-semibold"
             >
-              Browse Local Files
+              Browse Local Photos
             </button>
           </div>
 
           {/* Quick Stats & Active Status (Spans 4 cols) */}
-          <div className="col-span-1 md:col-span-4 flex flex-col gap-lg">
+          <div className="col-span-1 md:col-span-4 flex flex-col gap-md">
             {activePuzzle ? (
-              <div className="bg-primary text-on-primary dark:bg-[#1a2e24] dark:border dark:border-emerald-500/20 rounded-xl p-md shadow-md flex-1 flex flex-col justify-between">
+              <div className="bg-primary text-on-primary dark:bg-[#1a2e24] dark:border dark:border-emerald-500/20 rounded-2xl p-md shadow-md flex-1 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mb-xs">
@@ -232,39 +350,39 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   </div>
                   <button
                     onClick={() => onResumePuzzle(activePuzzle)}
-                    className="mt-md w-full bg-surface text-primary font-label-md text-label-md py-sm rounded-lg hover:bg-surface-bright transition-all shadow-sm font-semibold active:scale-98"
+                    className="mt-md w-full bg-surface text-primary font-label-md text-label-md py-sm rounded-xl hover:bg-surface-bright transition-all shadow-sm font-semibold active:scale-98 cursor-pointer"
                   >
                     Resume Puzzle
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-surface-container rounded-xl p-md shadow-sm border border-outline-variant/20 dark:border-transparent flex flex-col justify-between flex-1">
+              <div className="bg-surface-container rounded-2xl p-md shadow-sm border border-outline-variant/20 dark:border-transparent flex flex-col justify-between flex-1">
                 <div>
                   <div className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
-                    Ready to Play
+                    Mastery & Collection
                   </div>
                   <h4 className="font-headline-md text-headline-md text-primary font-semibold">
-                    Start a New Journey
+                    Master Puzzler
                   </h4>
-                  <p className="font-body-md text-sm text-on-surface-variant mt-sm">
-                    Select an image or pick a curated masterpiece below.
+                  <p className="font-body-md text-xs text-on-surface-variant mt-sm">
+                    Complete daily challenges and curated art packs to expand your puzzle streak.
                   </p>
                 </div>
               </div>
             )}
 
             {/* Completed Count Widget */}
-            <div className="bg-surface-container rounded-xl p-md flex items-center gap-md border border-outline-variant/20 dark:border-transparent shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center flex-shrink-0">
+            <div className="bg-surface-container rounded-2xl p-md flex items-center gap-md border border-outline-variant/20 dark:border-transparent shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-tertiary-container text-on-tertiary-container flex items-center justify-center flex-shrink-0">
                 <span className="material-symbols-outlined text-2xl">emoji_events</span>
               </div>
               <div>
                 <div className="font-headline-md text-headline-md text-primary font-bold">
-                  {completedSaves.length}
+                  {completedSaves.length} Puzzles Solved
                 </div>
-                <div className="font-label-sm text-label-sm text-on-surface-variant">
-                  Puzzles Completed
+                <div className="font-label-sm text-xs text-on-surface-variant">
+                  {dailyStreak.completedDates.length} Daily Challenges Mastered
                 </div>
               </div>
             </div>
@@ -284,7 +402,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   <div
                     key={save.id}
                     onClick={() => onResumePuzzle(save)}
-                    className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
+                    className="bg-surface-container rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
                   >
                     <div className="relative h-40 overflow-hidden bg-surface-variant">
                       <img
@@ -300,7 +418,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                           e.stopPropagation()
                           onDeleteSave(save.id)
                         }}
-                        className="absolute top-sm left-sm w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-error transition-all"
+                        className="absolute top-sm left-sm w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-error transition-all cursor-pointer"
                         title="Delete Save"
                       >
                         <span className="material-symbols-outlined text-sm">delete</span>
@@ -333,18 +451,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </section>
         )}
 
-        {/* Curated Starter Collection */}
+        {/* Curated Collection Grid */}
         {filteredSamples.length > 0 && (
           <section>
             <div className="flex justify-between items-end mb-md">
-              <h2 className="font-headline-lg text-headline-lg text-primary font-bold">Curated Masterpieces</h2>
+              <h2 className="font-headline-lg text-headline-lg text-primary font-bold">
+                {CATEGORY_FILTERS.find((c) => c.key === categoryFilter)?.label || 'Curated Masterpieces'}
+              </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-md">
               {filteredSamples.map((sample) => (
                 <div
                   key={sample.id}
                   onClick={() => onSelectImage(sample.imageSrc, sample.title, sample.pieceCount)}
-                  className="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
+                  className="bg-surface-container rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer border border-outline-variant/20 dark:border-transparent flex flex-col"
                 >
                   <div className="relative h-48 overflow-hidden bg-surface-variant">
                     <img
@@ -440,7 +560,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 <div
                   key={completed.id}
                   onClick={() => setInspectImage(completed)}
-                  className="aspect-square bg-surface-variant rounded-lg overflow-hidden relative group cursor-pointer border border-outline-variant/20 dark:border-transparent shadow-sm"
+                  className="aspect-square bg-surface-variant rounded-2xl overflow-hidden relative group cursor-pointer border border-outline-variant/20 dark:border-transparent shadow-sm"
                 >
                   <img
                     alt={completed.title}
@@ -461,7 +581,138 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         <div className="h-16" />
       </div>
 
-      {/* Inspect Modal */}
+      {/* Calendar Challenge Picker Modal */}
+      {showCalendarModal && (
+        <div
+          onClick={() => setShowCalendarModal(false)}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-md select-none"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface-container rounded-2xl max-w-lg w-full p-lg border border-outline-variant/30 dark:border-transparent shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+          >
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-md border-b border-outline-variant/20 pb-sm">
+              <div>
+                <h3 className="font-headline-md text-lg font-bold text-primary flex items-center gap-1.5">
+                  <span className="material-symbols-outlined">calendar_month</span>
+                  Daily Challenge Calendar
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  {monthName} {currentYear} • {dailyStreak.completedDates.length} Total Completed
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCalendarMonthOffset((prev) => prev - 1)}
+                  className="w-8 h-8 rounded-lg hover:bg-surface-variant flex items-center justify-center text-on-surface cursor-pointer"
+                  title="Previous Month"
+                >
+                  <span className="material-symbols-outlined text-sm">chevron_left</span>
+                </button>
+                <button
+                  onClick={() => setCalendarMonthOffset(0)}
+                  className="px-2 py-1 rounded-lg hover:bg-surface-variant text-[11px] font-semibold text-on-surface cursor-pointer"
+                  title="Today"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => setCalendarMonthOffset((prev) => Math.min(0, prev + 1))}
+                  disabled={calendarMonthOffset >= 0}
+                  className="w-8 h-8 rounded-lg hover:bg-surface-variant flex items-center justify-center text-on-surface cursor-pointer disabled:opacity-30"
+                  title="Next Month"
+                >
+                  <span className="material-symbols-outlined text-sm">chevron_right</span>
+                </button>
+                <button
+                  onClick={() => setShowCalendarModal(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-surface-variant flex items-center justify-center text-on-surface-variant ml-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Days of Week Header */}
+            <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-on-surface-variant mb-2">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
+
+            {/* Calendar Days Grid */}
+            <div className="grid grid-cols-7 gap-1.5">
+              {/* Empty leading days */}
+              {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
+
+              {/* Day cells */}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const dayNum = i + 1
+                const cellDate = new Date(currentYear, currentMonth, dayNum)
+                const y = cellDate.getFullYear()
+                const m = String(cellDate.getMonth() + 1).padStart(2, '0')
+                const d = String(dayNum).padStart(2, '0')
+                const dateStr = `${y}-${m}-${d}`
+
+                const isFuture = cellDate > new Date()
+                const isToday = dateStr === todayInfo.dateStr
+                const isCompleted = dailyStreak.completedDates.includes(dateStr)
+                const dayPuzzle = getDailyPuzzleForDate(cellDate)
+
+                return (
+                  <button
+                    key={dateStr}
+                    disabled={isFuture}
+                    onClick={() => {
+                      setShowCalendarModal(false)
+                      onSelectImage(
+                        dayPuzzle.puzzle.imageSrc,
+                        dayPuzzle.puzzle.title,
+                        dayPuzzle.puzzle.pieceCount,
+                        true,
+                        dateStr
+                      )
+                    }}
+                    className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-between border transition-all text-xs font-semibold relative ${
+                      isFuture
+                        ? 'opacity-30 cursor-not-allowed border-transparent bg-surface-container-low'
+                        : isToday
+                        ? 'border-primary ring-2 ring-primary/40 bg-primary/10 hover:bg-primary/20 cursor-pointer text-primary font-bold'
+                        : isCompleted
+                        ? 'border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-pointer'
+                        : 'border-outline-variant/30 hover:border-primary hover:bg-surface-variant cursor-pointer text-on-surface'
+                    }`}
+                    title={
+                      isFuture
+                        ? 'Future puzzle'
+                        : `${dayPuzzle.formattedDate}: ${dayPuzzle.puzzle.title}`
+                    }
+                  >
+                    <span className="text-[11px]">{dayNum}</span>
+                    {isCompleted ? (
+                      <span className="material-symbols-outlined text-xs text-emerald-500">
+                        check_circle
+                      </span>
+                    ) : isToday ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary mb-0.5" />
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inspect Completed Image Modal */}
       {inspectImage && (
         <div
           onClick={() => setInspectImage(null)}
@@ -497,14 +748,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     setInspectImage(null)
                     onReplayPuzzle(toReplay)
                   }}
-                  className="px-md py-sm bg-secondary text-on-secondary rounded-lg font-semibold hover:bg-secondary/90 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-md py-sm bg-secondary text-on-secondary rounded-xl font-semibold hover:bg-secondary/90 transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">replay</span>
                   <span>Replay Puzzle</span>
                 </button>
                 <button
                   onClick={() => setInspectImage(null)}
-                  className="px-md py-sm bg-surface-variant text-on-surface rounded-lg font-semibold hover:bg-surface-container-high transition-colors cursor-pointer"
+                  className="px-md py-sm bg-surface-variant text-on-surface rounded-xl font-semibold hover:bg-surface-container-high transition-colors cursor-pointer"
                 >
                   Close
                 </button>

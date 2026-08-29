@@ -79,6 +79,22 @@ export interface PuzzleSave {
   completedAt?: string
 }
 
+export interface SoundscapeVolumes {
+  chimes: number // 0 - 100
+  rain: number   // 0 - 100
+  fire: number   // 0 - 100
+  wind: number   // 0 - 100
+}
+
+export type PuzzleCategory = 'all' | 'masterpieces' | 'nature' | 'cozy' | 'abstract'
+
+export interface DailyStreak {
+  currentStreak: number
+  longestStreak: number
+  lastCompletedDate?: string
+  completedDates: string[]
+}
+
 export type ThemePreference = 'light' | 'dark' | 'system'
 
 export interface UserSettings {
@@ -94,6 +110,7 @@ export interface UserSettings {
   allowAutoComplete: boolean
   seamlessBlending: boolean
   discordRPC: boolean
+  soundscape: SoundscapeVolumes
 }
 
 export interface ViewportTransform {
