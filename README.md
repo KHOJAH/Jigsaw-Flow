@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.2-emerald.svg" alt="Version 1.0.2" />
+  <img src="https://img.shields.io/badge/version-1.0.3-emerald.svg" alt="Version 1.0.3" />
   <img src="https://img.shields.io/badge/platform-Windows-blue.svg" alt="Windows" />
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" />
 </p>
@@ -98,7 +98,7 @@
 ## Installation (Windows)
 
 ### Option 1: Setup Installer (Recommended)
-1. Download [`Jigsaw-Flow-Setup-1.0.2.exe`](https://github.com/KHOJAH/Jigsaw-Flow/releases/latest).
+1. Download [`Jigsaw-Flow-Setup-1.0.3.exe`](https://github.com/KHOJAH/Jigsaw-Flow/releases/latest).
 2. Run the installer (installs directly into your user profile with no Administrator UAC prompt required).
 3. Launch **Jigsaw Flow** from your Desktop or Start Menu.
 
