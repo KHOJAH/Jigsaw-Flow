@@ -20,6 +20,15 @@
 
 ## App Preview
 
+### Feature Highlights & Motion Demo
+*Dynamic preview showcasing parametric Bezier cuts, DSU cluster physics, ambient focus soundscapes, and streak achievements.*
+
+<p align="center">
+  <img src="docs/screenshots/jigsaw-flow-promo.gif" alt="Jigsaw Flow Demo" width="92%" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);" />
+</p>
+
+---
+
 ### Workspace & Solving Table
 *Tactile puzzle board with scattered pieces, organic Bezier cuts, reference ghost overlay, and floating toolbar controls.*
 
